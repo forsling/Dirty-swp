@@ -3,7 +3,7 @@
     "displayName": "SwapFileMonitor",
     "description": "Notifies the user about .swp files for active files",
     "version": "0.0.1",
-    "publisher": "Forsling",
+    "publisher": "Simon Forsling",
     "engines": {
         "vscode": "^1.28.0"
     },
