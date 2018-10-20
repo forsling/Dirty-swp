@@ -30,7 +30,7 @@ function activate(context) {
 
         var lastSlashIndex = documentPath.lastIndexOf('/');
         if (lastSlashIndex === -1) {
-            documentPath.lastIndexOf('\\')
+            lastSlashIndex = documentPath.lastIndexOf('\\')
         }
 
         var currentPath = documentPath.substring((0), lastSlashIndex + 1);
@@ -38,14 +38,15 @@ function activate(context) {
         var currentFileName = currentFile.substring(0, currentFile.lastIndexOf('.'));
 
         var targetPath = currentPath + currentFileName + '.swp';
-        console.log("TargetPath: " + targetPath);
         if (fs.existsSync(targetPath)) {
             vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
-            channel.appendLine("No .swp file found for file " + currentFile);
+            channel.appendLine(currentFileName + ".swp found");
+            channel.show(true);
             return;
         }
         else {
-            channel.appendLine("No .swp file found for file " + currentFile);
+            channel.appendLine("No .swp file for file " + currentFile);
+            channel.show(true);
         }
 
         let pattern = new vscode.RelativePattern(currentPath, (currentFileName + '.swp'));
