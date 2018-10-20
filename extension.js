@@ -1,27 +1,65 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+//const fs = require('fs');
 
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+
 function activate(context) {
+    let watchers = [];
+    let channel = vscode.window.createOutputChannel('relative');
+    context.subscriptions.push(channel);
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "swapmonitor" is now active!');
+    channel.appendLine(`New output channel`);
 
-    // The command has been defined in the package.json file
-    // Now provide the implementation of the command with  registerCommand
-    // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.sayHello', function () {
-        // The code you place here will be executed every time your command is executed
+    let disposable = vscode.commands.registerCommand('relative.startFileWatchers', () => {
+        channel.show(true);
+        let folders = vscode.workspace.workspaceFolders;
 
-        // Display a message box to the user
-        vscode.window.showInformationMessage('Hello World!');
+        var activePath = vscode.window.activeTextEditor.document.uri.fsPath;
+        var basePath = vscode.workspace.rootPath;
+        console.log("Rootpath: " + basePath);
+
+        var currentPath = activePath.substring((0), activePath.lastIndexOf('\\') + 1);
+        var currentFile = activePath.substring(activePath.lastIndexOf('\\') + 1, activePath.length - 1);
+        var currentFileName = currentFile.substring(0, currentFile.lastIndexOf('.'));
+        console.log("Current file: " + currentFile);
+
+        let pattern = new vscode.RelativePattern(currentPath, (currentFileName + '.swp'));
+        console.log(pattern);
+
+        let watcher = vscode.workspace.createFileSystemWatcher(pattern);
+        watcher.onDidCreate((event) => {
+            channel.appendLine(`Watcher 1: ${event.fsPath}`);
+            vscode.window.showWarningMessage('This file is being edited in vim!')
+            vscode.window.showSaveDialog({});
+        });
+        watchers.push(watcher);
+
+        watcher = vscode.workspace.createFileSystemWatcher(pattern);
+        watcher.onDidDelete((event) => {
+            channel.appendLine(`Watcher 2: ${event.fsPath}`);
+            vscode.window.showInformationMessage('This file is no longer being edited')
+        });
+        watchers.push(watcher);
+
+        watcher = vscode.workspace.createFileSystemWatcher('**/*.swp');
+        watcher.onDidCreate((event) => { channel.appendLine(`Watcher 3: ${event.fsPath}`); })
+        watchers.push(watcher);
     });
-
     context.subscriptions.push(disposable);
+
+    disposable = vscode.commands.registerCommand('relative.stopFileWatchers', () => {
+       watchers.forEach(e => e.dispose());
+    });
+    context.subscriptions.push(disposable);
+
+    disposable = vscode.commands.registerCommand('extension.sayHello', () => {
+        vscode.window.showInformationMessage('Extension has loaded for sure!');
+        console.log(watchers);
+     });
+     context.subscriptions.push(disposable);
 }
+
 exports.activate = activate;
 
 // this method is called when your extension is deactivated

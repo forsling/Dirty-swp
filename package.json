@@ -11,7 +11,7 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.sayHello"
+        "*"
     ],
     "main": "./extension",
     "contributes": {
@@ -19,6 +19,14 @@
             {
                 "command": "extension.sayHello",
                 "title": "Hello World"
+            },
+            {
+                "command": "relative.startFileWatchers",
+                "title": "startFileWatchers"
+            },
+            {
+                "command": "relative.stopFileWatchers",
+                "title": "stopFileWatchers"
             }
         ]
     },
@@ -32,5 +40,8 @@
         "eslint": "^4.11.0",
         "@types/node": "^8.10.25",
         "@types/mocha": "^2.2.42"
+    },
+    "dependencies": {
+        "chokidar": "^2.0.4"
     }
 }
