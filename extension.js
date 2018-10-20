@@ -3,18 +3,10 @@
 const vscode = require('vscode');
 const fs = require('fs');
 
-function fileExists(doesIt) {
-    if (doesIt) {
-
-    }
-}
-
 function activate(context) {
     let currentWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern("!", "!")); 
     let channel = vscode.window.createOutputChannel('swap');
     context.subscriptions.push(channel);
-
-    //channel.appendLine(`New output channel`);
 
     /*vscode.workspace.onDidOpenTextDocument(doc => { 
         console.log('OPENED => ' + doc.uri.toString(true));
