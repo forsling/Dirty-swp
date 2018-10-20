@@ -10,6 +10,14 @@ function activate(context) {
 
     channel.appendLine(`New output channel`);
 
+    vscode.workspace.onDidOpenTextDocument(doc => { 
+        console.log('OPENED => ' + doc.uri.toString(true));
+    });
+
+    vscode.workspace.onDidCloseTextDocument(doc => { 
+        console.log('CLOSED => ' + doc.uri.toString(true));
+    });
+
     vscode.window.onDidChangeActiveTextEditor(e => { 
         var documentPath = e.document.uri.fsPath;
         var currentPath = documentPath.substring((0), documentPath.lastIndexOf('\\') + 1);
