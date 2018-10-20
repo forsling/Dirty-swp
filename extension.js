@@ -11,9 +11,14 @@ function activate(context) {
 
     channel.appendLine(`New output channel`);
 
+    vscode.window.onDidChangeActiveTextEditor(e => { 
+        console.log(e.document.uri.fsPath)
+        //console.log(e._documentData._uri.fsPath);
+    });
+
     let disposable = vscode.commands.registerCommand('relative.startFileWatchers', () => {
         channel.show(true);
-        let folders = vscode.workspace.workspaceFolders;
+        //let folders = vscode.workspace.workspaceFolders;
 
         var activePath = vscode.window.activeTextEditor.document.uri.fsPath;
         var basePath = vscode.workspace.rootPath;
