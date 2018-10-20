@@ -1,6 +1,6 @@
 {
-    "name": ".swp Monitor",
-    "displayName": ".swp Monitor",
+    "name": "swapfilemonitor",
+    "displayName": "SwapFileMonitor",
     "description": "Notifies the user about .swp files for active files",
     "version": "0.0.1",
     "publisher": "Forsling",

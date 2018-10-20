@@ -3,21 +3,12 @@
 const vscode = require('vscode');
 const fs = require('fs');
 
+let currentWatcher;
+
 function activate(context) {
-    let currentWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern("", "")); 
-    let channel = vscode.window.createOutputChannel('swap');
-    context.subscriptions.push(channel);
 
-    /*vscode.workspace.onDidOpenTextDocument(doc => { 
-        console.log('OPENED => ' + doc.uri.toString(true));
-    });
-
-    vscode.workspace.onDidCloseTextDocument(doc => { 
-        console.log('CLOSED => ' + doc.uri.toString(true));
-    }); */
-
-    vscode.window.onDidChangeActiveTextEditor(e => { 
-        console.log(e.document.uri);
+    let listener = vscode.window.onDidChangeActiveTextEditor(e => { 
+        //console.log(e.document.uri);
         var documentPath = e.document.uri.fsPath;
 
         var lastSlashIndex = documentPath.lastIndexOf('/');
@@ -32,29 +23,40 @@ function activate(context) {
         var targetPath = currentPath + currentFileName + '.swp';
         if (fs.existsSync(targetPath)) {
             vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
-            return;
+            //return;
         }
 
         let pattern = new vscode.RelativePattern(currentPath, (currentFileName + '.swp'));
         //console.log(pattern);
 
-        currentWatcher.dispose();
-
+        if (currentWatcher) { currentWatcher.dispose() }
         currentWatcher = vscode.workspace.createFileSystemWatcher(pattern);
         currentWatcher.onDidCreate( () => {
-            vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
-            vscode.window.showSaveDialog({});
+            vscode.window.showErrorMessage(currentFileName + " is being edited in vim!", 'Open Dialog', 'Save As Dialog')
+            .then((choice) => showDialog(choice));
         });
 
         currentWatcher.onDidDelete(() => {
-            vscode.window.showInformationMessage('This file is no longer being edited')
+            vscode.window.showWarningMessage('This file is no longer being edited, but may have new changes', 'Open Dialog', 'Save As Dialog')
+            .then((choice) => showDialog(choice));
         });
     });
+    context.subscriptions.push(listener);
     
 }
 exports.activate = activate;
 
 // this method is called when your extension is deactivated
 function deactivate() {
+    currentWatcher.dispose();
 }
 exports.deactivate = deactivate;
+
+function showDialog(choice) {
+    if (choice == 'Open Dialog') {
+        vscode.window.showOpenDialog({});
+    }
+    else if (choice == 'Save As Dialog') {
+        vscode.window.showSaveDialog({});
+    }
+} 
