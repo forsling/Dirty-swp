@@ -1,9 +1,9 @@
 {
-    "name": "swapmonitor",
-    "displayName": "swapMonitor",
-    "description": "Looks for .swp files",
+    "name": ".swp Monitor",
+    "displayName": ".swp Monitor",
+    "description": "Notifies the user about .swp files for active files",
     "version": "0.0.1",
-    "publisher": "Test",
+    "publisher": "Forsling",
     "engines": {
         "vscode": "^1.28.0"
     },
@@ -16,18 +16,6 @@
     "main": "./extension",
     "contributes": {
         "commands": [
-            {
-                "command": "extension.sayHello",
-                "title": "Hello World"
-            },
-            {
-                "command": "relative.startFileWatchers",
-                "title": "startFileWatchers"
-            },
-            {
-                "command": "relative.stopFileWatchers",
-                "title": "stopFileWatchers"
-            }
         ]
     },
     "scripts": {
@@ -42,6 +30,5 @@
         "@types/mocha": "^2.2.42"
     },
     "dependencies": {
-        "chokidar": "^2.0.4"
     }
 }

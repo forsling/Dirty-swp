@@ -4,7 +4,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 
 function activate(context) {
-    let currentWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern("!", "!")); 
+    let currentWatcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern("", "")); 
     let channel = vscode.window.createOutputChannel('swap');
     context.subscriptions.push(channel);
 
@@ -32,23 +32,17 @@ function activate(context) {
         var targetPath = currentPath + currentFileName + '.swp';
         if (fs.existsSync(targetPath)) {
             vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
-            channel.appendLine(currentFileName + ".swp found");
-            channel.show(true);
             return;
-        }
-        else {
-            channel.appendLine("No .swp file for file " + currentFile);
-            channel.show(true);
         }
 
         let pattern = new vscode.RelativePattern(currentPath, (currentFileName + '.swp'));
-        console.log(pattern);
+        //console.log(pattern);
 
         currentWatcher.dispose();
 
         currentWatcher = vscode.workspace.createFileSystemWatcher(pattern);
         currentWatcher.onDidCreate( () => {
-            vscode.window.showWarningMessage('This file is being edited in vim!')
+            vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
             vscode.window.showSaveDialog({});
         });
 
@@ -57,9 +51,7 @@ function activate(context) {
         });
     });
     
-
 }
-
 exports.activate = activate;
 
 // this method is called when your extension is deactivated
