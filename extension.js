@@ -20,10 +20,11 @@ function activate(context) {
             var currentPath = documentPath.substring((0), lastSlashIndex + 1);
             var currentFile = documentPath.substring(lastSlashIndex + 1, documentPath.length);
             var currentFileName = currentFile.substring(0, currentFile.lastIndexOf('.'));
+            var extension = currentFile.substring(currentFile.lastIndexOf('.'), currentFile.length);
 
             var targetPath = currentPath + '.' + currentFileName + '.swp';
             if (fs.existsSync(targetPath)) {
-                vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
+                vscode.window.showWarningMessage(currentFileName + extension + " is in use somewhere else (.swp file exists)");
                 //return;
             }
 
@@ -33,12 +34,12 @@ function activate(context) {
             if (currentWatcher) { currentWatcher.dispose() }
             currentWatcher = vscode.workspace.createFileSystemWatcher(pattern);
             currentWatcher.onDidCreate( () => {
-                vscode.window.showErrorMessage(currentFileName + " is being edited in vim!", 'Open Dialog', 'Save As Dialog')
+                vscode.window.showWarningMessage(currentFileName + extension + " is in use somewhere else (.swp file exists)", 'Open Dialog', 'Save As Dialog')
                 .then((choice) => showDialog(choice));
             });
 
             currentWatcher.onDidDelete(() => {
-                vscode.window.showWarningMessage('This file is no longer being edited, but may have unimported changes', 'Open Dialog', 'Save As Dialog')
+                vscode.window.showWarningMessage(currentFileName + extension + " is no longer being edited and may have new changes!", 'Open Dialog', 'Save As Dialog')
                 .then((choice) => showDialog(choice));
             });
         }
