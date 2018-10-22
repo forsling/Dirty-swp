@@ -2,8 +2,8 @@
     "name": "swapfilemonitor",
     "displayName": "SwapFileMonitor",
     "description": "Notifies the user about .swp files for active files",
-    "version": "0.0.1",
-    "publisher": "no",
+    "version": "0.0.2",
+    "publisher": "forsling",
     "engines": {
         "vscode": "^1.28.0"
     },
