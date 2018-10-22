@@ -8,9 +8,8 @@ let currentWatcher;
 function activate(context) {
 
     let listener = vscode.window.onDidChangeActiveTextEditor(e => { 
-        if (e.document) {
+        if (e.document && e.document.uri) {
             //console.log(e.document.uri);
-            if (e.document) { }
             var documentPath = e.document.uri.fsPath;
 
             var lastSlashIndex = documentPath.lastIndexOf('/');
@@ -22,13 +21,13 @@ function activate(context) {
             var currentFile = documentPath.substring(lastSlashIndex + 1, documentPath.length);
             var currentFileName = currentFile.substring(0, currentFile.lastIndexOf('.'));
 
-            var targetPath = currentPath + currentFileName + '.swp';
+            var targetPath = currentPath + '.' + currentFileName + '.swp';
             if (fs.existsSync(targetPath)) {
                 vscode.window.showErrorMessage(currentFileName + " is being edited in vim!");
                 //return;
             }
 
-            let pattern = new vscode.RelativePattern(currentPath, (currentFileName + '.swp'));
+            let pattern = new vscode.RelativePattern(currentPath, ('.' + currentFileName + '.swp'));
             //console.log(pattern);
 
             if (currentWatcher) { currentWatcher.dispose() }
@@ -39,7 +38,7 @@ function activate(context) {
             });
 
             currentWatcher.onDidDelete(() => {
-                vscode.window.showWarningMessage('This file is no longer being edited, but may have new changes', 'Open Dialog', 'Save As Dialog')
+                vscode.window.showWarningMessage('This file is no longer being edited, but may have unimported changes', 'Open Dialog', 'Save As Dialog')
                 .then((choice) => showDialog(choice));
             });
         }
