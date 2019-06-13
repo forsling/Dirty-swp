@@ -1,8 +1,8 @@
 {
-	"name": "swapmonitor",
-	"displayName": "swapmonitor",
+	"name": "swpmonitor",
+	"displayName": "SWP Monitor",
 	"description": "Vim .swp file support",
-	"version": "0.1.0",
+	"version": "0.3.0",
 	"publisher": "forsling",
 	"engines": {
 		"vscode": "^1.33.0"
@@ -11,13 +11,11 @@
 		"Other"
 	],
 	"activationEvents": [
-        "*"
+		"*"
 	],
 	"main": "./extension.js",
 	"contributes": {
-		"commands": [
-
-		]
+		"commands": []
 	},
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",
@@ -29,8 +27,5 @@
 		"eslint": "^5.13.0",
 		"@types/node": "^10.12.21",
 		"@types/mocha": "^2.2.42"
-	},
-	"dependencies": {
-		"chokidar": "^3.0.0"
 	}
 }
