@@ -17,10 +17,13 @@ function openfile(document, wasInuse, swapPath) {
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+    //TODO: Lookover adding of documents on vscode startup
+
     let listener1 = vscode.workspace.onDidOpenTextDocument(e => {
         console.log("Document open: " + e.fileName)
         let filePath = e.uri.fsPath;
 
+        //ignore .swp files
         if (path.extname(filePath) === ".swp") {
             return
         }
@@ -30,6 +33,7 @@ function activate(context) {
         let swapPath = path.join(folder, "." + file + ".swp")
 
         fs.exists(swapPath, (exists) => {
+            //create opendocument object and add it to documents
             let doc = new openfile(e, exists, swapPath);
             documents[doc.document.uri] = doc;
 
@@ -59,20 +63,32 @@ function activate(context) {
     })
 
     let listener3 = vscode.workspace.onDidChangeTextDocument(e => {
-        //console.log("isDirty: " + e.document.isDirty);
         let doc = documents[e.document.uri];
         if (doc.document.isDirty) {
-            if (doc.wasInUse) {
+            //if the file is locked by us then editing is fine and nothing else needs to be done
+            if (doc.hasOurSwp) {
+                return
+            }
 
-            } else if (!doc.hasOurSwp) {
+            //if the file has a swp here then somebody else is editing it
+            var hasSwp = fs.existsSync(doc.swapPath)
+            if (hasSwp) {
+                vscode.window.showWarningMessage("This file is in used someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+                .then((choice) => showDialog(choice));
+            } else {
+                //if there is no current swp but the file is dirty we should lock it for ourselves
                 fs.writeFile(doc.swapPath, "VSCODE/" + vscode.env.machineId, (err) => {
                     if (!err) {
                         console.log("Written swp: " + doc.swapPath)
                         doc.hasOurSwp = true;
+                    } else {
+                        vscode.window.showErrorMessage("Unable to create .swp file. Somebody else may start editing the file")
                     }
                 })
             }
-        } else if (doc.hasOurSwp) {
+        } 
+        //if file is no longer dirty but still has our swp then we can remove it
+        else if (doc.hasOurSwp) {
             fs.unlink(doc.swapPath, (err) => {
                 if (!err) {
                     doc.hasOurSwp = false;
