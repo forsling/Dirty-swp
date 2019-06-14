@@ -89,6 +89,10 @@ function activate(context) {
     context.subscriptions.push(documentChangedListener);
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.start', () => {
+        if (active) {
+            vscode.window.showInformationMessage("Dirty swp is already active");
+            return
+        }
         vscode.window.showInformationMessage("Turning on .swp support");
         active = true;
         addOpenDocuments(true);
@@ -96,6 +100,10 @@ function activate(context) {
     }));
     
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.stop', () => {
+        if (!active) {
+            vscode.window.showInformationMessage("Dirty swp is already inactive");
+            return
+        }
         vscode.window.showInformationMessage("Turning off .swp support");
         swpStatusBar.hide();
         deactivate();
@@ -110,26 +118,53 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.listswp', () => {
         let files = [];
+
+        let activeEditor = vscode.window.activeTextEditor;
+        if (activeEditor && activeEditor.document.uri.scheme == "file") {
+            let currentDocKey = vscode.window.activeTextEditor.document.uri;
+            let currentDoc = documents[currentDocKey];
+            if (currentDoc && !currentDoc.forceLock) {
+                let swpExists = fs.existsSync(currentDoc.swapPath)
+                if (!swpExists || currentDoc.hasOurSwp) {
+                    files.push({
+                        label: "Lock current file until close", 
+                        action: () => {
+                            vscode.commands.executeCommand("dirtyswp.forcelock");
+                        }
+                    })
+                }
+            }
+        }
+
         Object.entries(documents).forEach(entry => {
             let doc = entry[1];
             console.log(doc);
+            let description;
             if (doc.hasOurSwp) {
-                let description = doc.forceLock ? "Locked by us (until close)" : "Locked by us (dirty)";
-                files.push({"label": doc.document.fileName, "description": description, docinfo: doc});
+                description = doc.forceLock ? "Locked by us (until close)" : "Locked by us (dirty)";
+            } else if (fs.existsSync(doc.swapPath)) {
+                description = "WARNING: Locked by other party";
             } else {
-                let inUse = fs.existsSync(doc.swapPath)
-                if (inUse) {
-                    files.push({"label": doc.document.fileName, "description": "Locked by other party (WARNING)", docinfo: doc});
-                }
+                return;
             }
+
+            files.push({
+                "label": doc.document.fileName, 
+                "description": description, 
+                action: () => {
+                    vscode.window.showTextDocument(doc.document);
+                }
+            });
         })
+
         vscode.window.showQuickPick(files)
         .then((val) => {
             console.log(val);
-            if (val) {
-                vscode.window.showTextDocument(val.docinfo.document);
+            if (val && val.action) {
+                val.action();
             }
         })
+
     }));
 
     swpStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
@@ -148,6 +183,7 @@ function deactivate() {
         }
     }
     documents = {};
+    active = false;
 }
 exports.deactivate = deactivate;
 
