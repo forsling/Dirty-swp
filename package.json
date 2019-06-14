@@ -1,6 +1,6 @@
 {
-	"name": "swpmonitor",
-	"displayName": "SWP Monitor",
+	"name": "dirtyswp",
+	"displayName": "Dirty swp",
 	"description": "Vim .swp file support",
 	"version": "0.4.0",
 	"publisher": "forsling",
