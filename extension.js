@@ -48,8 +48,7 @@ function addOpenDocuments(createSwpIfDirty = false) {
             
             fs.exists(docinfo.swapPath, (exists) => {
                 if (exists && !docinfo.hasOurSwp) {
-                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)", 'Open Dialog', 'Save As Dialog')
-                    .then((choice) => showDialog(choice));
+                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
                 }
             })
         })
@@ -98,8 +97,7 @@ function activate(context) {
 
             //warn user if file was already in use by someone else
             if (docinfo.wasInUse) {
-                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)", 'Open Dialog', 'Save As Dialog')
-                .then((choice) => showDialog(choice));
+                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
             }
             console.log(documents);
         })
