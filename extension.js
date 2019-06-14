@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 let documents = {}
-let myStatusBarItem;
+let swpStatusBar;
 let active = true;
 
 function DocumentInfo(document) {
@@ -19,72 +19,6 @@ function DocumentInfo(document) {
     this.hasOurSwp = false;
     this.forceLock = false;
     this.wasInUse = null;
-}
-
-function getDocInfoSync(document) {
-    let DocInfo = new DocumentInfo(document)
-    DocInfo.wasInUse = fs.existsSync(document.swapPath)
-    return DocInfo
-}
-
-function getDocInfoAsync(document, callback) {
-    let DocInfo = new DocumentInfo(document)
-    fs.exists(DocInfo.swapPath, (swpExists) => {
-        DocInfo.wasInUse = swpExists
-        callback(DocInfo)
-    })
-}
-
-function addOpenDocuments(createSwpIfDirty = false) {
-    console.log(vscode.workspace.textDocuments);
-    console.log(vscode.window.visibleTextEditors);
-    vscode.workspace.textDocuments.forEach((openDocument) => {
-        if (openDocument.uri.scheme != "file") {
-            return
-        }
-        getDocInfoAsync(openDocument, (docinfo) => {
-            documents[docinfo.document.uri] = docinfo;
-            if (createSwpIfDirty && docinfo.document.isDirty) {
-                writeOwnSwp(docinfo)
-            }
-            
-            fs.exists(docinfo.swapPath, (exists) => {
-                if (exists && !docinfo.hasOurSwp) {
-                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
-                }
-            })
-        })
-    })
-}
-
-function writeOwnSwp(docinfo, resultCallback) {
-    //if the file is locked by us then editing is fine and nothing else needs to be done
-    if (docinfo.hasOurSwp) {
-        if (resultCallback) { resultCallback("OUR_SWP_ALREADY_PRESENT") }
-        return
-    }
-    
-    //if the file has a swp here then somebody else is editing it
-    fs.exists(docinfo.swapPath, (hasSwp) => {
-        if (hasSwp) {
-            vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
-            .then((choice) => showDialog(choice));
-            if (resultCallback) { resultCallback("FILE_LOCKED_BY_OTHER") }
-        } else {
-            //if there is no current swp but the file is dirty we should lock it for ourselves
-            docinfo.hasOurSwp = true; //need to set this now to prevent async issues
-            fs.writeFile(docinfo.swapPath, "VSCODE/" + vscode.env.machineId, (err) => {
-                if (!err) {
-                    console.log("Written swp: " + docinfo.swapPath)
-                    if (resultCallback) { resultCallback("SWP_WRITE_SUCCESS") }
-                } else {
-                    docinfo.hasOurSwp = false;
-                    vscode.window.showErrorMessage("Unable to create .swp file. Somebody else may start editing the file")
-                    if (resultCallback) { resultCallback("SWP_WRITE_FAILED") }
-                }
-            })
-        }
-    })
 }
 
 /**
@@ -139,7 +73,9 @@ function activate(context) {
         //if file is no longer dirty but still has our swp, then we can remove the .swp file unless forcelock is set
         else if (doc.hasOurSwp && !doc.forceLock) {
             fs.exists(doc.swapPath, (ourSwpExists) => {
-                fs.unlinkSync(doc.swapPath);
+                if (ourSwpExists) {
+                    fs.unlinkSync(doc.swapPath);
+                }
                 doc.hasOurSwp = false;
             })
         }
@@ -156,10 +92,12 @@ function activate(context) {
         vscode.window.showInformationMessage("Turning on .swp support");
         active = true;
         addOpenDocuments(true);
+        swpStatusBar.show();
     }));
     
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.stop', () => {
         vscode.window.showInformationMessage("Turning off .swp support");
+        swpStatusBar.hide();
         deactivate();
     }));
     
@@ -167,12 +105,7 @@ function activate(context) {
         let name = vscode.window.activeTextEditor.document.uri;
         let docinfo = documents[name];
         docinfo.forceLock = true;
-        writeOwnSwp(docinfo, (result) => {
-            if (result == "OUR_SWP_ALREADY_PRESENT" || "SWP_WRITE_SUCCESS") {
-                vscode.window.showInformationMessage(docinfo.basename + " locked until close")
-            }
-
-        })
+        writeOwnSwp(docinfo)
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.listswp', () => {
@@ -181,12 +114,12 @@ function activate(context) {
             let doc = entry[1];
             console.log(doc);
             if (doc.hasOurSwp) {
-                let description = doc.forceLock ? " Locked by us (until close)" : " Locked by us (dirty)";
+                let description = doc.forceLock ? "Locked by us (until close)" : "Locked by us (dirty)";
                 files.push({"label": doc.document.fileName, "description": description, docinfo: doc});
             } else {
                 let inUse = fs.existsSync(doc.swapPath)
                 if (inUse) {
-                    files.push({"label": doc.document.fileName, "description": "(WARNING) Locked by other party", docinfo: doc});
+                    files.push({"label": doc.document.fileName, "description": "Locked by other party (WARNING)", docinfo: doc});
                 }
             }
         })
@@ -199,11 +132,11 @@ function activate(context) {
         })
     }));
 
-    myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    context.subscriptions.push(myStatusBarItem);
-    myStatusBarItem.text = ".swp"
-    myStatusBarItem.command = "dirtyswp.listswp"
-    myStatusBarItem.show();
+    swpStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
+    context.subscriptions.push(swpStatusBar);
+    swpStatusBar.text = ".swp"
+    swpStatusBar.command = "dirtyswp.listswp"
+    swpStatusBar.show();
 }
 exports.activate = activate;
 
@@ -217,6 +150,72 @@ function deactivate() {
     documents = {};
 }
 exports.deactivate = deactivate;
+
+function writeOwnSwp(docinfo, resultCallback) {
+    //if the file is locked by us then editing is fine and nothing else needs to be done
+    if (docinfo.hasOurSwp) {
+        if (resultCallback) { resultCallback("OUR_SWP_ALREADY_PRESENT") }
+        return
+    }
+    
+    //if the file has a swp here then somebody else is editing it
+    fs.exists(docinfo.swapPath, (hasSwp) => {
+        if (hasSwp) {
+            vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+            .then((choice) => showDialog(choice));
+            if (resultCallback) { resultCallback("FILE_LOCKED_BY_OTHER") }
+        } else {
+            //if there is no current swp but the file is dirty we should lock it for ourselves
+            docinfo.hasOurSwp = true; //need to set this now to prevent async issues
+            fs.writeFile(docinfo.swapPath, "VSCODE/" + vscode.env.machineId, (err) => {
+                if (!err) {
+                    console.log("Written swp: " + docinfo.swapPath)
+                    if (resultCallback) { resultCallback("SWP_WRITE_SUCCESS") }
+                } else {
+                    docinfo.hasOurSwp = false;
+                    vscode.window.showErrorMessage("Unable to create .swp file. Somebody else may start editing the file")
+                    if (resultCallback) { resultCallback("SWP_WRITE_FAILED") }
+                }
+            })
+        }
+    })
+}
+
+function getDocInfoSync(document) {
+    let DocInfo = new DocumentInfo(document)
+    DocInfo.wasInUse = fs.existsSync(document.swapPath)
+    return DocInfo
+}
+
+function getDocInfoAsync(document, callback) {
+    let DocInfo = new DocumentInfo(document)
+    fs.exists(DocInfo.swapPath, (swpExists) => {
+        DocInfo.wasInUse = swpExists
+        callback(DocInfo)
+    })
+}
+
+function addOpenDocuments(createSwpIfDirty = false) {
+    console.log(vscode.workspace.textDocuments);
+    console.log(vscode.window.visibleTextEditors);
+    vscode.workspace.textDocuments.forEach((openDocument) => {
+        if (openDocument.uri.scheme != "file") {
+            return
+        }
+        getDocInfoAsync(openDocument, (docinfo) => {
+            documents[docinfo.document.uri] = docinfo;
+            if (createSwpIfDirty && docinfo.document.isDirty) {
+                writeOwnSwp(docinfo)
+            }
+            
+            fs.exists(docinfo.swapPath, (exists) => {
+                if (exists && !docinfo.hasOurSwp) {
+                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
+                }
+            })
+        })
+    })
+}
 
 function showDialog(choice) {
     if (choice == 'Open Dialog') {
