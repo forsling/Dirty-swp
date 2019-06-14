@@ -2,7 +2,7 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty swp",
 	"description": "Vim .swp file support",
-	"version": "0.4.0",
+	"version": "0.5.0",
 	"publisher": "forsling",
 	"engines": {
 		"vscode": "^1.33.0"
@@ -15,7 +15,16 @@
 	],
 	"main": "./extension.js",
 	"contributes": {
-		"commands": []
+		"commands": [
+			{
+				"command": "dirtyswp.start",
+				"title": "Start Dirty .swp support"
+			},
+			{
+				"command": "dirtyswp.stop",
+				"title": "Stop Dirty .swp support"
+			}
+		]
 	},
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",
