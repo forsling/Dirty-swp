@@ -17,6 +17,7 @@ function DocumentInfo(document) {
     this.document = document
     this.swapPath = path.join(folder, "." + basename + ".swp")    
     this.hasOurSwp = false;
+    this.forceLock = false;
     this.wasInUse = null;
 }
 
@@ -41,7 +42,7 @@ function addOpenDocuments(createSwpIfDirty = false) {
         }
         getDocInfoAsync(openDocument, (docinfo) => {
             documents[docinfo.document.uri] = docinfo;
-            if (createSwpIfDirty) {
+            if (createSwpIfDirty && docinfo.document.isDirty) {
                 writeOwnSwp(docinfo)
             }
             
@@ -131,8 +132,8 @@ function activate(context) {
         if (doc.document.isDirty) {
             writeOwnSwp(doc)
         } 
-        //if file is no longer dirty but still has our swp then we can remove the .swp file
-        else if (doc.hasOurSwp) {
+        //if file is no longer dirty but still has our swp, then we can remove the .swp file unless forcelock is set
+        else if (doc.hasOurSwp && !doc.forceLock) {
             fs.exists(doc.swapPath, (ourSwpExists) => {
                 fs.unlinkSync(doc.swapPath);
                 doc.hasOurSwp = false;
@@ -156,6 +157,13 @@ function activate(context) {
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.stop', () => {
         vscode.window.showInformationMessage("Turning off .swp support");
         deactivate();
+    }));
+    
+    context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.forcelock', () => {
+        let name = vscode.window.activeTextEditor.document.uri;
+        let docinfo = documents[name];
+        docinfo.forceLock = true;
+        writeOwnSwp(docinfo)
 	}));
 }
 exports.activate = activate;
