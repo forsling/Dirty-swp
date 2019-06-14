@@ -11,10 +11,11 @@ let active = true;
 function DocumentInfo(document) {
     let filePath = document.uri.fsPath
     let folder = path.dirname(filePath)
+    let basename = path.basename(filePath)
 
-    this.basename = path.basename(filePath)
+    this.basename = basename
     this.document = document
-    this.swapPath = path.join(folder, "." + this.basename + ".swp")    
+    this.swapPath = path.join(folder, "." + basename + ".swp")    
     this.hasOurSwp = false;
     this.wasInUse = null;
 }
@@ -26,8 +27,8 @@ function getDocInfoSync(document) {
 }
 
 function getDocInfoAsync(document, callback) {
-    fs.exists(document.swapPath, (swpExists) => {
-        let DocInfo = new DocumentInfo(document)
+    let DocInfo = new DocumentInfo(document)
+    fs.exists(DocInfo.swapPath, (swpExists) => {
         DocInfo.wasInUse = swpExists
         callback(DocInfo)
     })
@@ -35,12 +36,21 @@ function getDocInfoAsync(document, callback) {
 
 function addOpenDocuments(createSwpIfDirty = false) {
     vscode.workspace.textDocuments.forEach((openDocument) => {
+        if (openDocument.uri.scheme != "file") {
+            return
+        }
         getDocInfoAsync(openDocument, (docinfo) => {
-            console.log(docinfo);
             documents[docinfo.document.uri] = docinfo;
             if (createSwpIfDirty) {
                 writeOwnSwp(docinfo)
             }
+            
+            fs.exists(docinfo.swapPath, (exists) => {
+                if (exists && !docinfo.hasOurSwp) {
+                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)", 'Open Dialog', 'Save As Dialog')
+                    .then((choice) => showDialog(choice));
+                }
+            })
         })
     })
 }
@@ -50,11 +60,11 @@ function writeOwnSwp(docinfo) {
     if (docinfo.hasOurSwp) {
         return
     }
-
+    
     //if the file has a swp here then somebody else is editing it
     fs.exists(docinfo.swapPath, (hasSwp) => {
         if (hasSwp) {
-            vscode.window.showWarningMessage("This file is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+            vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
             .then((choice) => showDialog(choice));
         } else {
             //if there is no current swp but the file is dirty we should lock it for ourselves
@@ -76,10 +86,9 @@ function writeOwnSwp(docinfo) {
  */
 function activate(context) {
     let openDocumentListener = vscode.workspace.onDidOpenTextDocument(e => {
-        if (!active) {
+        if (!active || e.uri.scheme != "file") {
             return;
         }
-        console.log("Document open: " + e.fileName)
         
         //create opendocument object and add it to documents
         getDocInfoAsync(e, (docinfo) => {
@@ -88,19 +97,18 @@ function activate(context) {
 
             //warn user if file was already in use by someone else
             if (docinfo.wasInUse) {
-                let basename = path.basename(docinfo.document.file)
-                vscode.window.showWarningMessage(basename + " is in use somewhere else (.swp file exists)", 'Open Dialog', 'Save As Dialog')
+                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)", 'Open Dialog', 'Save As Dialog')
                 .then((choice) => showDialog(choice));
             }
+            console.log(documents);
         })
     })
 
     let closeDocumentListener = vscode.workspace.onDidCloseTextDocument(e => {
-        if (!active) {
+        if (!active || e.uri.scheme != "file") {
             return;
         }
 
-        console.log("Document close: " + e.fileName)
         let doc = documents[e.uri];
         //If there is a swap file that we created, remove it on document close
         if (doc.hasOurSwp) {
@@ -115,7 +123,7 @@ function activate(context) {
     })
 
     let documentChangedListener = vscode.workspace.onDidChangeTextDocument(e => {
-        if (!active) {
+        if (!active || e.document.uri.scheme != "file") {
             return;
         }
 
