@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 let documents = {}
-
+let myStatusBarItem;
 let active = true;
 
 function DocumentInfo(document) {
@@ -36,6 +36,8 @@ function getDocInfoAsync(document, callback) {
 }
 
 function addOpenDocuments(createSwpIfDirty = false) {
+    console.log(vscode.workspace.textDocuments);
+    console.log(vscode.window.visibleTextEditors);
     vscode.workspace.textDocuments.forEach((openDocument) => {
         if (openDocument.uri.scheme != "file") {
             return
@@ -171,7 +173,37 @@ function activate(context) {
             }
 
         })
-	}));
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.listswp', () => {
+        let files = [];
+        Object.entries(documents).forEach(entry => {
+            let doc = entry[1];
+            console.log(doc);
+            if (doc.hasOurSwp) {
+                let description = doc.forceLock ? " Locked by us (until close)" : " Locked by us (dirty)";
+                files.push({"label": doc.document.fileName, "description": description, docinfo: doc});
+            } else {
+                let inUse = fs.existsSync(doc.swapPath)
+                if (inUse) {
+                    files.push({"label": doc.document.fileName, "description": "(WARNING) Locked by other party", docinfo: doc});
+                }
+            }
+        })
+        vscode.window.showQuickPick(files)
+        .then((val) => {
+            console.log(val);
+            if (val) {
+                vscode.window.showTextDocument(val.docinfo.document);
+            }
+        })
+    }));
+
+    myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    context.subscriptions.push(myStatusBarItem);
+    myStatusBarItem.text = ".swp"
+    myStatusBarItem.command = "dirtyswp.listswp"
+    myStatusBarItem.show();
 }
 exports.activate = activate;
 

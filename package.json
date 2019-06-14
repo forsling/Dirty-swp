@@ -2,7 +2,7 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty swp",
 	"description": "Vim .swp file support",
-	"version": "0.5.1",
+	"version": "0.5.2",
 	"publisher": "forsling",
 	"engines": {
 		"vscode": "^1.33.0"
@@ -27,6 +27,10 @@
 			{
 				"command": "dirtyswp.stop",
 				"title": "swp: Deactivate locking/monitoring"
+			},
+			{
+				"command": "dirtyswp.listswp",
+				"title": "swp: List locked files"
 			}
 		]
 	},
