@@ -73,15 +73,16 @@ function activate(context) {
             //if the file has a swp here then somebody else is editing it
             var hasSwp = fs.existsSync(doc.swapPath)
             if (hasSwp) {
-                vscode.window.showWarningMessage("This file is in used someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+                vscode.window.showWarningMessage("This file is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
                 .then((choice) => showDialog(choice));
             } else {
                 //if there is no current swp but the file is dirty we should lock it for ourselves
+                doc.hasOurSwp = true; //need to set this no to prevent async issues
                 fs.writeFile(doc.swapPath, "VSCODE/" + vscode.env.machineId, (err) => {
                     if (!err) {
                         console.log("Written swp: " + doc.swapPath)
-                        doc.hasOurSwp = true;
                     } else {
+                        doc.hasOurSwp = false;
                         vscode.window.showErrorMessage("Unable to create .swp file. Somebody else may start editing the file")
                     }
                 })
@@ -97,9 +98,24 @@ function activate(context) {
         }
     })
 
+    //on startup, add any already opened documents
+    vscode.workspace.textDocuments.forEach((openDocument) => {
+        //TODO: fix duplicated code
+        console.log("Adding start docs: " + openDocument.fileName);
+        let filePath = openDocument.uri.fsPath;
+        let folder = path.dirname(filePath)
+        let file = path.basename(filePath)
+        let openFileSwapPath = path.join(folder, "." + file + ".swp")
+
+        let swpExists = fs.existsSync(openFileSwapPath)
+        let doc = new openfile(openDocument, swpExists, openFileSwapPath);
+        documents[doc.document.uri] = doc;
+    })
+
     context.subscriptions.push(listener1);
     context.subscriptions.push(listener2);
     context.subscriptions.push(listener3);
+
 }
 exports.activate = activate;
 
