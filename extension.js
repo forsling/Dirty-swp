@@ -55,9 +55,10 @@ function addOpenDocuments(createSwpIfDirty = false) {
     })
 }
 
-function writeOwnSwp(docinfo) {
+function writeOwnSwp(docinfo, resultCallback) {
     //if the file is locked by us then editing is fine and nothing else needs to be done
     if (docinfo.hasOurSwp) {
+        if (resultCallback) { resultCallback("OUR_SWP_ALREADY_PRESENT") }
         return
     }
     
@@ -66,15 +67,18 @@ function writeOwnSwp(docinfo) {
         if (hasSwp) {
             vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
             .then((choice) => showDialog(choice));
+            if (resultCallback) { resultCallback("FILE_LOCKED_BY_OTHER") }
         } else {
             //if there is no current swp but the file is dirty we should lock it for ourselves
             docinfo.hasOurSwp = true; //need to set this now to prevent async issues
             fs.writeFile(docinfo.swapPath, "VSCODE/" + vscode.env.machineId, (err) => {
                 if (!err) {
                     console.log("Written swp: " + docinfo.swapPath)
+                    if (resultCallback) { resultCallback("SWP_WRITE_SUCCESS") }
                 } else {
                     docinfo.hasOurSwp = false;
                     vscode.window.showErrorMessage("Unable to create .swp file. Somebody else may start editing the file")
+                    if (resultCallback) { resultCallback("SWP_WRITE_FAILED") }
                 }
             })
         }
@@ -161,7 +165,12 @@ function activate(context) {
         let name = vscode.window.activeTextEditor.document.uri;
         let docinfo = documents[name];
         docinfo.forceLock = true;
-        writeOwnSwp(docinfo)
+        writeOwnSwp(docinfo, (result) => {
+            if (result == "OUR_SWP_ALREADY_PRESENT" || "SWP_WRITE_SUCCESS") {
+                vscode.window.showInformationMessage(docinfo.basename + " locked until close")
+            }
+
+        })
 	}));
 }
 exports.activate = activate;
