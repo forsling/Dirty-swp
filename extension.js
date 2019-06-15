@@ -15,7 +15,7 @@ function DocumentInfo(document) {
 
     this.basename = basename
     this.document = document
-    this.swapPath = path.join(folder, "." + basename + ".swp")    
+    this.swapPath = path.join(folder, "." + basename + ".swp")
     this.hasOurSwp = false;
     this.forceLock = false;
     this.wasInUse = null;
@@ -25,6 +25,8 @@ function DocumentInfo(document) {
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+    active = vscode.workspace.getConfiguration().get('dirtyswp.startActive');
+    
     let openDocumentListener = vscode.workspace.onDidOpenTextDocument(e => {
         if (!active || e.uri.scheme != "file") {
             return;

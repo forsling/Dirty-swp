@@ -28,7 +28,18 @@
 				"command": "dirtyswp.listswp",
 				"title": "Dirty swp: List locked files"
 			}
-		]
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Dirty .swp",
+			"properties": {
+				"dirtyswp.startActive": {
+					"type": "boolean",
+					"default": true,
+					"description": "Whether or not Dirty .swp starts with active locking/monitoring of files"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",
