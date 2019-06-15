@@ -2,7 +2,7 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty swp",
 	"description": "Vim .swp file support",
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"publisher": "forsling",
 	"engines": {
 		"vscode": "^1.33.0"
