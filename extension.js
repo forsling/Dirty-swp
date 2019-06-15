@@ -121,7 +121,7 @@ function activate(context) {
             } else {
                 //if the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
                 try {
-                    fs.writeFileSync(doc.swapPath, swpString)
+                    fs.writeFileSync(doc.swapPath, swpString);
                     doc.hasOurSwp = true;
                 } catch(err) { 
                     vscode.window.showErrorMessage("Writing .swp failed: " + err);
@@ -140,7 +140,7 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.start', () => {
         if (active) {
-            vscode.window.showInformationMessage("Dirty swp is already active");
+            vscode.window.showInformationMessage("Dirty.swp is already active");
             return
         }
         vscode.window.showInformationMessage("Resuming .swp monitoring and locking");
@@ -151,7 +151,7 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.stop', () => {
         if (!active) {
-            vscode.window.showInformationMessage("Dirty swp is already paused");
+            vscode.window.showInformationMessage("Dirty.swp is already paused");
             return
         }
         vscode.window.showInformationMessage("Pausing .swp monitoring and locking.");
@@ -239,20 +239,18 @@ function activate(context) {
             });
         })
 
-        vscode.window.showQuickPick(listItems)
-            .then((val) => {
-                console.log(val);
-                if (val && val.action) {
-                    val.action();
-                }
-            })
+        vscode.window.showQuickPick(listItems).then((val) => {
+            if (val && val.action) {
+                val.action();
+            }
+        })
 
     }));
 
     swpStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
     context.subscriptions.push(swpStatusBar);
-    swpStatusBar.text = ".swp"
-    swpStatusBar.command = "dirtyswp.listswp"
+    swpStatusBar.text = ".swp";
+    swpStatusBar.command = "dirtyswp.listswp";
     swpStatusBar.show();
 }
 exports.activate = activate;
@@ -303,12 +301,12 @@ function addOpenDocuments(createSwpIfDirty = false) {
         let docinfo = new DocumentInfo(openDocument)
         documents[docinfo.document.uri] = docinfo;
         if (createSwpIfDirty && docinfo.document.isDirty) {
-            tryLockFile(docinfo)
+            tryLockFile(docinfo);
         }
 
         if (!docinfo.hasOurSwp) {
             hasSwp(docinfo, () => {
-                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
+                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)");
             })
         }
     })

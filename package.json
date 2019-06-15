@@ -1,7 +1,7 @@
 {
 	"name": "dirtyswp",
-	"displayName": "Dirty swp",
-	"description": "Vim .swp file support",
+	"displayName": "Dirty.swp",
+	"description": "Vim .swp file detection & locking",
 	"version": "0.6.2",
 	"publisher": "forsling",
 	"engines": {
@@ -18,29 +18,29 @@
 		"commands": [
 			{
 				"command": "dirtyswp.start",
-				"title": "Dirty swp: Start/resume"
+				"title": "Dirty.swp: Start"
 			},
 			{
 				"command": "dirtyswp.stop",
-				"title": "Dirty swp: Pause"
+				"title": "Dirty.swp: Pause"
 			},
 			{
 				"command": "dirtyswp.listswp",
-				"title": "Dirty swp: List locked files"
+				"title": "Dirty.swp: List locked files"
 			},
 			{
 				"command": "dirtyswp.forcelock",
-				"title": "Dirty swp: Lock file until close"
+				"title": "Dirty.swp: Lock file until close"
 			}
 		],
 		"configuration": {
 			"type": "object",
-			"title": "Dirty .swp",
+			"title": "Dirty.swp",
 			"properties": {
 				"dirtyswp.startActive": {
 					"type": "boolean",
 					"default": true,
-					"description": "Whether or not Dirty .swp starts with active locking/monitoring of files"
+					"description": "Whether or not Dirty.swp starts with active locking/monitoring of files"
 				}
 			}
 		}
