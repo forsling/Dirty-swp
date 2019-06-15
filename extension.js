@@ -4,7 +4,8 @@ const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
 
-let documents = {}
+const swpString = "VSCODE/" + vscode.env.machineId;
+let documents = {};
 let swpStatusBar;
 let active = true;
 
@@ -14,8 +15,8 @@ function DocumentInfo(document) {
     let folder = path.dirname(filePath);
     let basename = path.basename(filePath);
 
-    this.basename = basename;
     this.document = document;
+    this.basename = basename;
     this.swapPath = path.join(folder, "." + basename + ".swp");
     this.hasOurSwp = false;
     this.forceLock = false;
@@ -23,6 +24,16 @@ function DocumentInfo(document) {
     //If the file has been in use by someone else while dirty,
     //then there may be unimported changes on disk that risk being overwritten
     this.potentialUnsyncedChanges = false;
+
+    this.removeOwnSwp = function() {
+        if (self.hasOurSwp) {
+            self.hasOurSwp = false;
+            fs.unlinkSync(self.swapPath);
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 function hasSwp(DocInfo, hasSwpCallback, noSwpCallback) {
@@ -68,11 +79,8 @@ function activate(context) {
 
         let doc = documents[e.uri];
         //If there is a swap file that we created, remove it on document close
-        if (doc.hasOurSwp) {
-            hasSwp(doc, () => {
-                fs.unlinkSync(doc.swapPath)
-            })
-        }
+        doc.removeOwnSwp();
+
         delete documents[e.uri];
         console.log(documents);
     })
@@ -88,10 +96,7 @@ function activate(context) {
         } 
         else if (doc.hasOurSwp && !doc.forceLock) {
             //if file is no longer dirty but still has our swp, then we can remove the .swp file unless forcelock is set
-            hasSwp(doc, () => {
-                fs.unlinkSync(doc.swapPath);
-            })
-            doc.hasOurSwp = false;
+            doc.removeOwnSwp();
         }
     })
 
@@ -132,21 +137,19 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.listswp', () => {
         let files = [];
-
         let activeEditor = vscode.window.activeTextEditor;
+
         if (activeEditor && activeEditor.document.uri.scheme == "file") {
             let currentDocKey = vscode.window.activeTextEditor.document.uri;
             let currentDoc = documents[currentDocKey];
-            if (currentDoc && !currentDoc.forceLock) {
-                let swpExists = fs.existsSync(currentDoc.swapPath)
-                if (!swpExists || currentDoc.hasOurSwp) {
-                    files.push({
-                        label: "Lock current file until close", 
-                        action: () => {
-                            vscode.commands.executeCommand("dirtyswp.forcelock");
-                        }
-                    })
-                }
+
+            if (currentDoc && currentDoc.hasOurSwp && !currentDoc.forceLock) {
+                files.push({
+                    label: "Lock current file until close", 
+                    action: () => {
+                        vscode.commands.executeCommand("dirtyswp.forcelock");
+                    }
+                })
             }
         }
 
@@ -192,9 +195,7 @@ exports.activate = activate;
 // this method is called when your extension is deactivated
 function deactivate() {
     for (let doc of Object.keys(documents)) {
-        if (documents[doc].hasOurSwp) {
-            fs.unlinkSync(documents[doc].swapPath);
-        }
+        documents[doc].removeOwnSwp();
     }
     documents = {};
     active = false;
@@ -217,7 +218,7 @@ function writeOwnSwp(docinfo, resultCallback) {
         } else {
             //if there is no current swp but the file is dirty we should lock it for ourselves
             docinfo.hasOurSwp = true; //need to set this now to prevent async issues
-            fs.writeFile(docinfo.swapPath, "VSCODE/" + vscode.env.machineId, (err) => {
+            fs.writeFile(docinfo.swapPath, swpString, (err) => {
                 if (!err) {
                     console.log("Written swp: " + docinfo.swapPath)
                     if (resultCallback) { resultCallback("SWP_WRITE_SUCCESS") }
@@ -243,13 +244,12 @@ function addOpenDocuments(createSwpIfDirty = false) {
         if (createSwpIfDirty && docinfo.document.isDirty) {
             writeOwnSwp(docinfo)
         }
-        
-        fs.exists(docinfo.swapPath, (exists) => {
-            if (exists && !docinfo.hasOurSwp) {
-                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
-            }
-        })
 
+        if (!docinfo.hasOurSwp) {
+            hasSwp(docinfo, () => {
+                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
+            })
+        }
     })
 }
 
