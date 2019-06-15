@@ -2,7 +2,7 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty swp",
 	"description": "Vim .swp file support",
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"publisher": "forsling",
 	"engines": {
 		"vscode": "^1.33.0"
@@ -18,15 +18,19 @@
 		"commands": [
 			{
 				"command": "dirtyswp.start",
-				"title": "Dirty swp: Activate"
+				"title": "Dirty swp: Start/resume"
 			},
 			{
 				"command": "dirtyswp.stop",
-				"title": "Dirty swp: Deactivate"
+				"title": "Dirty swp: Pause"
 			},
 			{
 				"command": "dirtyswp.listswp",
 				"title": "Dirty swp: List locked files"
+			},
+			{
+				"command": "dirtyswp.forcelock",
+				"title": "Dirty swp: Lock file until close"
 			}
 		],
 		"configuration": {

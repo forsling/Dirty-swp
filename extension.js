@@ -25,7 +25,7 @@ function DocumentInfo(document) {
     //then there may be unimported changes on disk that risk being overwritten
     this.potentialUnsyncedChanges = false;
 
-    this.removeOwnSwp = function() {
+    this.removeOwnSwp = function () {
         if (self.hasOurSwp) {
             self.hasOurSwp = false;
             fs.unlinkSync(self.swapPath);
@@ -55,12 +55,12 @@ function hasSwp(DocInfo, hasSwpCallback, noSwpCallback) {
  */
 function activate(context) {
     active = vscode.workspace.getConfiguration().get('dirtyswp.startActive');
-    
+
     let openDocumentListener = vscode.workspace.onDidOpenTextDocument(e => {
         if (!active || e.uri.scheme != "file") {
             return;
         }
-        
+
         //create DocumentInfo object and add it to documents
         let docinfo = new DocumentInfo(e);
         documents[docinfo.document.uri] = docinfo;
@@ -93,7 +93,7 @@ function activate(context) {
         let doc = documents[e.document.uri];
         if (doc.document.isDirty) {
             tryLockFile(doc)
-        } 
+        }
         else if (doc.hasOurSwp && !doc.forceLock) {
             //if file is no longer dirty but still has our swp, then we can remove the .swp file unless forcelock is set
             doc.removeOwnSwp();
@@ -112,22 +112,22 @@ function activate(context) {
             vscode.window.showInformationMessage("Dirty swp is already active");
             return
         }
-        vscode.window.showInformationMessage("Turning on .swp support");
+        vscode.window.showInformationMessage("Resuming .swp monitoring and locking");
         active = true;
         addOpenDocuments(true);
         swpStatusBar.show();
     }));
-    
+
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.stop', () => {
         if (!active) {
-            vscode.window.showInformationMessage("Dirty swp is already inactive");
+            vscode.window.showInformationMessage("Dirty swp is already paused");
             return
         }
-        vscode.window.showInformationMessage("Turning off .swp support");
-        swpStatusBar.hide();
+        vscode.window.showInformationMessage("Pausing .swp monitoring and locking.");
+        //swpStatusBar.hide();
         deactivate();
     }));
-    
+
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.forcelock', () => {
         let name = vscode.window.activeTextEditor.document.uri;
         let docinfo = documents[name];
@@ -136,16 +136,45 @@ function activate(context) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.listswp', () => {
-        let files = [];
+        let listItems = [];
+
+        //Add activate/deactivate action
+        if (active) {
+            listItems.push({
+                label: "Pause Dirty .swp (release all locks)",
+                action: () => {
+                    vscode.commands.executeCommand("dirtyswp.stop");
+                }
+            })
+        } else {
+            listItems.push({
+                label: "Start Dirty .swp",
+                action: () => {
+                    vscode.commands.executeCommand("dirtyswp.start");
+                }
+            })
+        }
+        
+        //Add lock until close action (if applicable)
         let activeEditor = vscode.window.activeTextEditor;
 
         if (activeEditor && activeEditor.document.uri.scheme == "file") {
             let currentDocKey = vscode.window.activeTextEditor.document.uri;
             let currentDoc = documents[currentDocKey];
 
-            if (currentDoc && currentDoc.hasOurSwp && !currentDoc.forceLock) {
-                files.push({
-                    label: "Lock current file until close", 
+            let showLockAction = true;
+            if (!currentDoc || currentDoc.forceLock) {
+                showLockAction = false;
+            } else if (!currentDoc.hasOurSwp) {
+                try {
+                    fs.statSync(currentDoc.swapPath);
+                    showLockAction = false;
+                } catch (err) { }
+            }
+
+            if (showLockAction) {
+                listItems.push({
+                    label: "Lock current file until close",
                     action: () => {
                         vscode.commands.executeCommand("dirtyswp.forcelock");
                     }
@@ -153,9 +182,9 @@ function activate(context) {
             }
         }
 
+        //Add all known locked files and their status
         Object.entries(documents).forEach(entry => {
             let doc = entry[1];
-            console.log(doc);
             let description;
             if (doc.hasOurSwp) {
                 description = doc.forceLock ? "Locked by us (until close)" : "Locked by us (dirty)";
@@ -166,25 +195,26 @@ function activate(context) {
                 }
                 catch (e) {
                     return;
-                }                
+                }
             }
 
-            files.push({
-                "label": doc.document.fileName, 
-                "description": description, 
+            listItems.push({
+                "label": "File: " + doc.document.fileName,
+                "description": description,
+                "id": doc.document.uri,
                 action: () => {
                     vscode.window.showTextDocument(doc.document);
                 }
             });
         })
 
-        vscode.window.showQuickPick(files)
-        .then((val) => {
-            console.log(val);
-            if (val && val.action) {
-                val.action();
-            }
-        })
+        vscode.window.showQuickPick(listItems)
+            .then((val) => {
+                console.log(val);
+                if (val && val.action) {
+                    val.action();
+                }
+            })
 
     }));
 
@@ -206,18 +236,18 @@ function deactivate() {
 }
 exports.deactivate = deactivate;
 
-function tryLockFile(docinfo, resultCallback = (res) => {}) {
+function tryLockFile(docinfo, resultCallback = (res) => { }) {
     //if the file is locked by us then editing is fine and nothing else needs to be done
     if (docinfo.hasOurSwp) {
         resultCallback(true);
         return;
     }
-    
+
     //if the file has a swp here then somebody else is editing it
     hasSwp(docinfo,
         () => {
             vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
-            .then((choice) => showDialog(choice));
+                .then((choice) => showDialog(choice));
             resultCallback(false);
         }, () => {
             //if there is no current swp but the file is dirty we should lock it for ourselves
