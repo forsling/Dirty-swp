@@ -2,7 +2,7 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty.swp",
 	"description": "Vim .swp file detection & locking",
-	"version": "0.6.2",
+	"version": "0.6.3",
 	"publisher": "forsling",
 	"engines": {
 		"vscode": "^1.33.0"
@@ -41,6 +41,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Whether or not Dirty.swp starts with active locking/monitoring of files"
+				},
+				"dirtyswp.showStatusBarItem": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show .swp statusbar item"
 				}
 			}
 		}

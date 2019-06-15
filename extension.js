@@ -41,6 +41,7 @@ function DocumentInfo(document) {
  */
 function activate(context) {
     active = vscode.workspace.getConfiguration().get('dirtyswp.startActive');
+    let statusBarEnabled = vscode.workspace.getConfiguration().get('dirtyswp.showStatusBarItem');
 
     let openDocumentListener = vscode.workspace.onDidOpenTextDocument(e => {
         if (!active || e.uri.scheme != "file") {
@@ -92,7 +93,7 @@ function activate(context) {
                     .then((choice) => showDialog(choice));
             } else if (doc.potentialUnsyncedChanges) {
                 //even if the file is no longer in use by someone else, there may still be changes that have not been loaded (since file is dirty)
-                vscode.window.showWarningMessage(doc.basename + " is no longer being edited elsewhere but may have unsaved changes: Save may overwrite changes!", 'Open Dialog', 'Save As Dialog')
+                vscode.window.showWarningMessage(doc.basename + " is no longer being edited elsewhere but may have unsynced changes: Save may overwrite changes!", 'Open Dialog', 'Save As Dialog')
                     .then((choice) => showDialog(choice));
             } else {
                 //if the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
@@ -107,6 +108,19 @@ function activate(context) {
         }
     })
 
+    let confChangedListener = vscode.workspace.onDidChangeConfiguration((e) => {
+        let statusbarAffected = e.affectsConfiguration('dirtyswp.showStatusBarItem');
+        if (statusbarAffected) {
+            statusBarEnabled = vscode.workspace.getConfiguration().get('dirtyswp.showStatusBarItem');
+            if (statusBarEnabled) {
+                swpStatusBar.show();
+            } else {
+                swpStatusBar.hide();
+            }
+        }
+    });
+    context.subscriptions.push(confChangedListener);
+    
     //on startup, add any already opened documents
     addOpenDocuments();
 
@@ -122,7 +136,6 @@ function activate(context) {
         vscode.window.showInformationMessage("Resuming .swp monitoring and locking");
         active = true;
         addOpenDocuments(true);
-        swpStatusBar.show();
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.stop', () => {
@@ -131,7 +144,6 @@ function activate(context) {
             return
         }
         vscode.window.showInformationMessage("Pausing .swp monitoring and locking.");
-        //swpStatusBar.hide();
         deactivate();
     }));
 
@@ -148,14 +160,14 @@ function activate(context) {
         //Add activate/deactivate action
         if (active) {
             listItems.push({
-                label: "Pause Dirty .swp (release all locks)",
+                label: "Pause Dirty.swp (release all locks)",
                 action: () => {
                     vscode.commands.executeCommand("dirtyswp.stop");
                 }
             })
         } else {
             listItems.push({
-                label: "Start Dirty .swp",
+                label: "Start Dirty.swp",
                 action: () => {
                     vscode.commands.executeCommand("dirtyswp.start");
                 }
@@ -227,7 +239,10 @@ function activate(context) {
     context.subscriptions.push(swpStatusBar);
     swpStatusBar.text = ".swp";
     swpStatusBar.command = "dirtyswp.listswp";
-    swpStatusBar.show();
+    if (statusBarEnabled) {
+        swpStatusBar.show();
+    }
+    context.subscriptions.push(swpStatusBar);
 }
 exports.activate = activate;
 
