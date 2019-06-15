@@ -9,16 +9,34 @@ let swpStatusBar;
 let active = true;
 
 function DocumentInfo(document) {
-    let filePath = document.uri.fsPath
-    let folder = path.dirname(filePath)
-    let basename = path.basename(filePath)
+    let self = this;
+    let filePath = document.uri.fsPath;
+    let folder = path.dirname(filePath);
+    let basename = path.basename(filePath);
 
-    this.basename = basename
-    this.document = document
-    this.swapPath = path.join(folder, "." + basename + ".swp")
+    this.basename = basename;
+    this.document = document;
+    this.swapPath = path.join(folder, "." + basename + ".swp");
     this.hasOurSwp = false;
     this.forceLock = false;
-    this.wasInUse = null;
+
+    //If the file has been in use by someone else while dirty,
+    //then there may be unimported changes on disk that risk being overwritten
+    this.potentialUnsyncedChanges = false;
+}
+
+function hasSwp(DocInfo, hasSwpCallback, noSwpCallback) {
+    fs.stat(DocInfo.swapPath, (err, stats) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                noSwpCallback();
+            } else {
+                vscode.window.showErrorMessage("Dirty .swp error: " + err.message)
+            }
+        } else {
+            hasSwpCallback(stats);
+        }
+    })
 }
 
 /**
@@ -32,17 +50,15 @@ function activate(context) {
             return;
         }
         
-        //create opendocument object and add it to documents
-        getDocInfoAsync(e, (docinfo) => {
-            //add docinfo object to documents
-            documents[docinfo.document.uri] = docinfo;
+        //create DocumentInfo object and add it to documents
+        let docinfo = new DocumentInfo(e);
+        documents[docinfo.document.uri] = docinfo;
 
-            //warn user if file was already in use by someone else
-            if (docinfo.wasInUse) {
-                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
-            }
-            console.log(documents);
+        //warn user if file is being edited somewhere else
+        hasSwp(docinfo, () => {
+            vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
         })
+        console.log(documents);
     })
 
     let closeDocumentListener = vscode.workspace.onDidCloseTextDocument(e => {
@@ -53,10 +69,8 @@ function activate(context) {
         let doc = documents[e.uri];
         //If there is a swap file that we created, remove it on document close
         if (doc.hasOurSwp) {
-            fs.exists(doc.swapPath, (exists) => {
-                if (exists) {
-                    fs.unlinkSync(doc.swapPath)
-                }
+            hasSwp(doc, () => {
+                fs.unlinkSync(doc.swapPath)
             })
         }
         delete documents[e.uri];
@@ -72,14 +86,12 @@ function activate(context) {
         if (doc.document.isDirty) {
             writeOwnSwp(doc)
         } 
-        //if file is no longer dirty but still has our swp, then we can remove the .swp file unless forcelock is set
         else if (doc.hasOurSwp && !doc.forceLock) {
-            fs.exists(doc.swapPath, (ourSwpExists) => {
-                if (ourSwpExists) {
-                    fs.unlinkSync(doc.swapPath);
-                }
-                doc.hasOurSwp = false;
+            //if file is no longer dirty but still has our swp, then we can remove the .swp file unless forcelock is set
+            hasSwp(doc, () => {
+                fs.unlinkSync(doc.swapPath);
             })
+            doc.hasOurSwp = false;
         }
     })
 
@@ -219,20 +231,6 @@ function writeOwnSwp(docinfo, resultCallback) {
     })
 }
 
-function getDocInfoSync(document) {
-    let DocInfo = new DocumentInfo(document)
-    DocInfo.wasInUse = fs.existsSync(document.swapPath)
-    return DocInfo
-}
-
-function getDocInfoAsync(document, callback) {
-    let DocInfo = new DocumentInfo(document)
-    fs.exists(DocInfo.swapPath, (swpExists) => {
-        DocInfo.wasInUse = swpExists
-        callback(DocInfo)
-    })
-}
-
 function addOpenDocuments(createSwpIfDirty = false) {
     console.log(vscode.workspace.textDocuments);
     console.log(vscode.window.visibleTextEditors);
@@ -240,18 +238,18 @@ function addOpenDocuments(createSwpIfDirty = false) {
         if (openDocument.uri.scheme != "file") {
             return
         }
-        getDocInfoAsync(openDocument, (docinfo) => {
-            documents[docinfo.document.uri] = docinfo;
-            if (createSwpIfDirty && docinfo.document.isDirty) {
-                writeOwnSwp(docinfo)
+        let docinfo = new DocumentInfo(openDocument)
+        documents[docinfo.document.uri] = docinfo;
+        if (createSwpIfDirty && docinfo.document.isDirty) {
+            writeOwnSwp(docinfo)
+        }
+        
+        fs.exists(docinfo.swapPath, (exists) => {
+            if (exists && !docinfo.hasOurSwp) {
+                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
             }
-            
-            fs.exists(docinfo.swapPath, (exists) => {
-                if (exists && !docinfo.hasOurSwp) {
-                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
-                }
-            })
         })
+
     })
 }
 
