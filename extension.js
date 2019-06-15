@@ -36,30 +36,6 @@ function DocumentInfo(document) {
     }
 }
 
-function hasSwp(DocInfo, hasSwpCallback, noSwpCallback) {
-    fs.stat(DocInfo.swapPath, (err, stats) => {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                noSwpCallback();
-            } else {
-                vscode.window.showErrorMessage("Dirty .swp error: " + err.message)
-            }
-        } else {
-            hasSwpCallback(stats);
-        }
-    })
-}
-
-function hasSwpSync(DocInfo) {
-    let swpPath = DocInfo.swapPath;
-    try {
-        let stats = fs.statSync(swpPath);
-        return stats;
-    } catch (err) {
-        return false;
-    }
-}
-
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -109,21 +85,21 @@ function activate(context) {
             }
         }
         else if (!doc.hasOurSwp) { //file has unsaved changes but is not locked by us
-            if (hasSwpSync(doc)) { 
+            if (hasSwpSync(doc)) {
                 // if it is in use by someone else then there is a risk of overwriting someone elses changes
                 doc.potentialUnsyncedChanges = true;
                 vscode.window.showWarningMessage(doc.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
-                .then((choice) => showDialog(choice));
-            } else if (doc.potentialUnsyncedChanges) { 
+                    .then((choice) => showDialog(choice));
+            } else if (doc.potentialUnsyncedChanges) {
                 //even if the file is no longer in use by someone else, there may still be changes that have not been loaded (since file is dirty)
                 vscode.window.showWarningMessage(doc.basename + " is no longer being edited elsewhere but may have unsaved changes: Save may overwrite changes!", 'Open Dialog', 'Save As Dialog')
-                .then((choice) => showDialog(choice));
+                    .then((choice) => showDialog(choice));
             } else {
                 //if the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
                 try {
                     fs.writeFileSync(doc.swapPath, swpString);
                     doc.hasOurSwp = true;
-                } catch(err) { 
+                } catch (err) {
                     vscode.window.showErrorMessage("Writing .swp failed: " + err);
                 }
 
@@ -185,7 +161,7 @@ function activate(context) {
                 }
             })
         }
-        
+
         //Add lock until close action (if applicable)
         let activeEditor = vscode.window.activeTextEditor;
 
@@ -265,6 +241,30 @@ function deactivate() {
 }
 exports.deactivate = deactivate;
 
+function hasSwp(DocInfo, hasSwpCallback, noSwpCallback) {
+    fs.stat(DocInfo.swapPath, (err, stats) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                noSwpCallback();
+            } else {
+                vscode.window.showErrorMessage("Dirty .swp error: " + err.message)
+            }
+        } else {
+            hasSwpCallback(stats);
+        }
+    })
+}
+
+function hasSwpSync(DocInfo) {
+    let swpPath = DocInfo.swapPath;
+    try {
+        let stats = fs.statSync(swpPath);
+        return stats;
+    } catch (err) {
+        return false;
+    }
+}
+
 function tryLockFile(docinfo) {
     //if the file is locked by us then editing is fine and nothing else needs to be done
     if (docinfo.hasOurSwp) {
@@ -273,27 +273,25 @@ function tryLockFile(docinfo) {
 
     //if the file has a swp here then somebody else is editing it
     hasSwp(docinfo, () => {
-            vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
-                .then((choice) => showDialog(choice));
-        }, () => {
-            //if there is no current swp but the file is dirty we should lock it for ourselves
-            try {
-                fs.writeFileSync(docinfo.swapPath, swpString);
-                docinfo.hasOurSwp = true;
-                console.log("Written swp: " + docinfo.swapPath);
-                return true;
-            } catch (err) {
-                docinfo.hasOurSwp = false;
-                console.log("Writing swp failed: " + docinfo.swapPath);
-                return false;
-            }
+        vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+            .then((choice) => showDialog(choice));
+    }, () => {
+        //if there is no current swp but the file is dirty we should lock it for ourselves
+        try {
+            fs.writeFileSync(docinfo.swapPath, swpString);
+            docinfo.hasOurSwp = true;
+            console.log("Written swp: " + docinfo.swapPath);
+            return true;
+        } catch (err) {
+            docinfo.hasOurSwp = false;
+            console.log("Writing swp failed: " + docinfo.swapPath);
+            return false;
         }
+    }
     );
 }
 
 function addOpenDocuments(createSwpIfDirty = false) {
-    console.log(vscode.workspace.textDocuments);
-    console.log(vscode.window.visibleTextEditors);
     vscode.workspace.textDocuments.forEach((openDocument) => {
         if (openDocument.uri.scheme != "file") {
             return
@@ -319,4 +317,4 @@ function showDialog(choice) {
     else if (choice == 'Save As Dialog') {
         vscode.window.showSaveDialog({});
     }
-} 
+}
