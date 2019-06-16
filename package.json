@@ -2,8 +2,9 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty.swp",
 	"description": "Vim .swp file detection & locking",
-	"version": "0.6.3",
+	"version": "0.7.0",
 	"publisher": "forsling",
+	"icon": "images/logo512.png",
 	"engines": {
 		"vscode": "^1.33.0"
 	},
@@ -29,7 +30,7 @@
 				"title": "Dirty.swp: List locked files"
 			},
 			{
-				"command": "dirtyswp.forcelock",
+				"command": "dirtyswp.lockuntilclose",
 				"title": "Dirty.swp: Lock file until close"
 			}
 		],
@@ -48,7 +49,21 @@
 					"description": "Show .swp statusbar item"
 				}
 			}
-		}
+		},
+		"keybindings": [
+			{
+				"command": "dirtyswp.listswp",
+				"key": "ctrl+d ctrl+s",
+				"mac": "cmd+d cmd+s",
+				"when": "editorTextFocus"
+			},
+			{
+				"command": "dirtyswp.lockuntilclose",
+				"key": "ctrl+d ctrl+l",
+				"mac": "cmd+d cmd+l",
+				"when": "editorTextFocus"
+			}
+		]
 	},
 	"scripts": {
 		"postinstall": "node ./node_modules/vscode/bin/install",

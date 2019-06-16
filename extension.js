@@ -147,7 +147,7 @@ function activate(context) {
         deactivate();
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.forcelock', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.lockuntilclose', () => {
         let name = vscode.window.activeTextEditor.document.uri;
         let docinfo = documents[name];
         docinfo.forceLock = true;
@@ -156,23 +156,6 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('dirtyswp.listswp', () => {
         let listItems = [];
-
-        //Add activate/deactivate action
-        if (active) {
-            listItems.push({
-                label: "Pause Dirty.swp (release all locks)",
-                action: () => {
-                    vscode.commands.executeCommand("dirtyswp.stop");
-                }
-            })
-        } else {
-            listItems.push({
-                label: "Start Dirty.swp",
-                action: () => {
-                    vscode.commands.executeCommand("dirtyswp.start");
-                }
-            })
-        }
 
         //Add lock until close action (if applicable)
         let activeEditor = vscode.window.activeTextEditor;
@@ -195,10 +178,27 @@ function activate(context) {
                 listItems.push({
                     label: "Lock current file until close",
                     action: () => {
-                        vscode.commands.executeCommand("dirtyswp.forcelock");
+                        vscode.commands.executeCommand("dirtyswp.lockuntilclose");
                     }
                 })
             }
+        }
+
+        //Add activate/deactivate action
+        if (active) {
+            listItems.push({
+                label: "Pause Dirty.swp (release all locks)",
+                action: () => {
+                    vscode.commands.executeCommand("dirtyswp.stop");
+                }
+            })
+        } else {
+            listItems.push({
+                label: "Start Dirty.swp",
+                action: () => {
+                    vscode.commands.executeCommand("dirtyswp.start");
+                }
+            })
         }
 
         //Add all known locked files and their status
