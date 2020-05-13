@@ -294,18 +294,15 @@ function tryLockFile(docinfo) {
     //if the file is locked by us then editing is fine and nothing else needs to be done
     if (docinfo.hasOurSwp) {
         return;
-    } else {
-        var swpContents = fs.readFileSync(docinfo.filePath, "utf-8");
-        if (swpContents === "VSCODE/" + vscode.env.machineId) {
-            docinfo.hasOurSwp = true; 
-            return
-        }
     }
 
-    //if the file has a swp here then somebody else is editing it
+    //if the file has a swp here then somebody else may be editing it
     hasSwp(docinfo, () => {
-        vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+        //check the .swp file if it really isn't ours
+        ifNotOurSwp(docinfo, () => {
+            vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
             .then((choice) => showDialog(choice));
+        });
     }, () => {
         //if there is no current swp but the file is dirty we should lock it for ourselves
         try {
@@ -322,6 +319,18 @@ function tryLockFile(docinfo) {
     );
 }
 
+//Check the .swp file if it is ours, it may be lost .swp file from a previous session
+function ifNotOurSwp(documentInfo, isOtherCallback) {
+    fs.readFile(documentInfo.swapPath, "utf-8", (err, data) => {
+        if (!err && data === "VSCODE/" + vscode.env.machineId) {
+            console.log("Found our .swp at " + documentInfo.swapPath);
+            documentInfo.hasOurSwp = true; 
+        } else {
+            isOtherCallback();
+        }
+    });
+}
+
 function addOpenDocuments(createSwpIfDirty = false) {
     vscode.workspace.textDocuments.forEach((openDocument) => {
         if (openDocument.uri.scheme != "file") {
@@ -335,7 +344,9 @@ function addOpenDocuments(createSwpIfDirty = false) {
 
         if (!docinfo.hasOurSwp) {
             hasSwp(docinfo, () => {
-                vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)");
+                ifNotOurSwp(docinfo, () => {
+                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)");
+                });
             })
         }
     })
