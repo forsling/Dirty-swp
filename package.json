@@ -2,11 +2,11 @@
 	"name": "dirtyswp",
 	"displayName": "Dirty.swp",
 	"description": "Vim .swp file detection & locking",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"publisher": "forsling",
 	"icon": "images/logo512.png",
 	"engines": {
-		"vscode": "^1.33.0"
+		"vscode": "^1.45.0"
 	},
 	"categories": [
 		"Other"
@@ -66,14 +66,19 @@
 		]
 	},
 	"scripts": {
-		"postinstall": "node ./node_modules/vscode/bin/install",
-		"test": "node ./node_modules/vscode/bin/test"
+		"lint": "eslint .",
+		"pretest": "npm run lint",
+		"test": "node ./test/runTest.js"
 	},
 	"devDependencies": {
-		"typescript": "^3.3.1",
-		"vscode": "^1.1.28",
-		"eslint": "^5.13.0",
-		"@types/node": "^10.12.21",
-		"@types/mocha": "^2.2.42"
+		"@types/vscode": "^1.45.0",
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^7.0.2",
+		"@types/node": "^13.11.0",
+		"eslint": "^6.8.0",
+		"glob": "^7.1.6",
+		"mocha": "^7.1.2",
+		"typescript": "^3.8.3",
+		"vscode-test": "^1.3.0"
 	}
 }
