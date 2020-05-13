@@ -27,8 +27,8 @@ function DocumentInfo(document) {
 
     this.removeOwnSwp = function () {
         if (self.hasOurSwp) {
-            self.hasOurSwp = false;
             fs.unlinkSync(self.swapPath);
+            self.hasOurSwp = false;
             return true;
         } else {
             return false;
@@ -87,10 +87,20 @@ function activate(context) {
         }
         else if (!doc.hasOurSwp) { //file has unsaved changes but is not locked by us
             if (hasSwpSync(doc)) {
-                // if it is in use by someone else then there is a risk of overwriting someone elses changes
-                doc.potentialUnsyncedChanges = true;
-                vscode.window.showWarningMessage(doc.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
-                    .then((choice) => showDialog(choice));
+                // check first if it it really isn't our file
+                fs.readFile(doc.swapPath, "utf-8", (err, data) => {
+                    if (!err && data === swpString) {
+                        //looks like it was our swp after all, perhaps from and old session
+                        doc.hasOurSwp = true;
+                        console.log("Reclaimed own swap at: " + doc.swapPath);
+                    } else {
+                        // if it is in use by someone else then there is a risk of overwriting someone elses changes
+                        doc.potentialUnsyncedChanges = true;
+                        vscode.window.showWarningMessage(doc.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+                            .then((choice) => showDialog(choice));
+                    }
+                });
+
             } else if (doc.potentialUnsyncedChanges) {
                 //even if the file is no longer in use by someone else, there may still be changes that have not been loaded (since file is dirty)
                 vscode.window.showWarningMessage(doc.basename + " is no longer being edited elsewhere but may have unsynced changes: Save may overwrite changes!", 'Open Dialog', 'Save As Dialog')
@@ -284,6 +294,12 @@ function tryLockFile(docinfo) {
     //if the file is locked by us then editing is fine and nothing else needs to be done
     if (docinfo.hasOurSwp) {
         return;
+    } else {
+        var swpContents = fs.readFileSync(docinfo.filePath, "utf-8");
+        if (swpContents === "VSCODE/" + vscode.env.machineId) {
+            docinfo.hasOurSwp = true; 
+            return
+        }
     }
 
     //if the file has a swp here then somebody else is editing it
