@@ -47,6 +47,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Show .swp statusbar item"
+				},
+				"dirtyswp.writeNameToSwp": {
+					"type": "string",
+					"default": "",
+					"description": "Writes optional name to your .swp files to display to others who has locked the file"
 				}
 			}
 		},

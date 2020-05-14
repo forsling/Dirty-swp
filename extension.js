@@ -5,6 +5,8 @@ const fs = require('fs');
 const path = require('path');
 
 const swpString = "VSCODE/" + vscode.env.machineId;
+var userPart = "";
+
 let documents = {};
 let swpStatusBar;
 let active = true;
@@ -40,6 +42,12 @@ function DocumentInfo(document) {
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
+    userPart = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp');
+    if (userPart != "") {
+        userPart = ":" + userPart;
+    }
+    console.log(userPart);
+
     active = vscode.workspace.getConfiguration().get('dirtyswp.startActive');
     let statusBarEnabled = vscode.workspace.getConfiguration().get('dirtyswp.showStatusBarItem');
 
@@ -89,14 +97,20 @@ function activate(context) {
             if (hasSwpSync(doc)) {
                 // check first if it it really isn't our file
                 fs.readFile(doc.swapPath, "utf-8", (err, data) => {
-                    if (!err && data === swpString) {
+                    var fileSwp = getSwap(data);
+                    console.log(fileSwp);
+                    if (!err && fileSwp.vscodeSwp && fileSwp.string === swpString) {
                         //looks like it was our swp after all, perhaps from and old session
                         doc.hasOurSwp = true;
                         console.log("Reclaimed own swap at: " + doc.swapPath);
                     } else {
                         // if it is in use by someone else then there is a risk of overwriting someone elses changes
                         doc.potentialUnsyncedChanges = true;
-                        vscode.window.showWarningMessage(doc.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
+                        var inUseMessage = " is in use someplace else: If you save your changes you may overwrite somebody elses!";
+                        if (fileSwp.vscodeSwp && fileSwp.user) {
+                            inUseMessage = ` is in use by ${fileSwp.user}: If you save you may overwrite their changes!`;                            
+                        }
+                        vscode.window.showWarningMessage(doc.basename + inUseMessage, 'Open Dialog', 'Save As Dialog')
                             .then((choice) => showDialog(choice));
                     }
                 });
@@ -108,7 +122,7 @@ function activate(context) {
             } else {
                 //if the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
                 try {
-                    fs.writeFileSync(doc.swapPath, swpString);
+                    fs.writeFileSync(doc.swapPath, swpString + userPart);
                     doc.hasOurSwp = true;
                 } catch (err) {
                     vscode.window.showErrorMessage("Writing .swp failed: " + err);
@@ -306,7 +320,7 @@ function tryLockFile(docinfo) {
     }, () => {
         //if there is no current swp but the file is dirty we should lock it for ourselves
         try {
-            fs.writeFileSync(docinfo.swapPath, swpString);
+            fs.writeFileSync(docinfo.swapPath, swpString + userPart);
             docinfo.hasOurSwp = true;
             console.log("Written swp: " + docinfo.swapPath);
             return true;
@@ -319,6 +333,24 @@ function tryLockFile(docinfo) {
     );
 }
 
+function getSwap(data) {
+    var swap = {
+        vscodeSwp: false,
+        string: null,
+        user: null
+    };
+    if (data.substring(0, 6) !== "VSCODE") {
+        return swap;
+    }
+    var obj = data.split(":");
+    swap.vscodeSwp = true;
+    swap.string = obj[0];
+    if (obj.length > 1) {
+        swap.user = obj[1];
+    }
+    return swap;
+}
+
 //Check the .swp file if it is ours, it may be lost .swp file from a previous session
 function ifNotOurSwp(documentInfo, isOtherCallback) {
     fs.readFile(documentInfo.swapPath, "utf-8", (err, data) => {
@@ -326,7 +358,8 @@ function ifNotOurSwp(documentInfo, isOtherCallback) {
             console.log("Found our .swp at " + documentInfo.swapPath);
             documentInfo.hasOurSwp = true; 
         } else {
-            isOtherCallback();
+            var swp = getSwap(data);
+            isOtherCallback(swp);
         }
     });
 }
@@ -344,8 +377,12 @@ function addOpenDocuments(createSwpIfDirty = false) {
 
         if (!docinfo.hasOurSwp) {
             hasSwp(docinfo, () => {
-                ifNotOurSwp(docinfo, () => {
-                    vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)");
+                ifNotOurSwp(docinfo, (swp) => {
+                    var inUseMessage = " is in use somewhere else";
+                    if (swp.vscodeSwp && swp.user) {
+                        inUseMessage = ` is in use by ${swp.user}`;
+                    }
+                    vscode.window.showWarningMessage(docinfo.basename + inUseMessage + " (.swp file exists)");
                 });
             })
         }
