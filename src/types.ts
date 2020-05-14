@@ -40,8 +40,8 @@ class DsDocument {
     }
 }
 
-interface DsDocEntry {
-    [key: string]: DsDocument;
+interface DsDocArray {
+	[key: string]: DsDocument;
 }
 
 class swpFile {
@@ -64,4 +64,4 @@ class swpFile {
     }
 }
 
-export { DsDocument, DsDocEntry, swpFile };
+export { DsDocument, DsDocArray, swpFile };

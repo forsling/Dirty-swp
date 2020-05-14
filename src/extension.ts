@@ -1,12 +1,8 @@
 import * as vscode from 'vscode';
-import { DsDocument, swpFile, DsDocEntry } from './types';
+import { DsDocument, swpFile, DsDocArray } from './types';
 import { checkSwp, tryLockFile } from './filetasks';
 import * as ds from './display';
 import * as fs from 'fs';
-
-interface DsDocArray {
-	[key: string]: DsDocument;
-}
 
 const swpString: string = "VSCODE/" + vscode.env.machineId;
 let userPart: string = "";

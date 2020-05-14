@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from "fs";
 import { swpString, fullSwpString } from './extension';
-import { DsDocument, swpFile, DsDocEntry } from './types';
+import { DsDocument, swpFile } from './types';
 import { warn } from './display';
 
 let checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) => void, noSwpCallback: () => void) {

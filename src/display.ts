@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as fs from "fs";
 import { swpFile, DsDocument } from "./types";
 import { DsDocs, active } from './extension';
-import { checkSwp } from './filetasks';
 
 const listSwp = function() {
     let listItems = [];
