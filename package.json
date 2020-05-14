@@ -16,7 +16,8 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
-        "commands": [{
+        "commands": [
+            {
                 "command": "dirtyswp.start",
                 "title": "Dirty.swp: Start"
             },
@@ -54,12 +55,14 @@
                 }
             }
         },
-        "keybindings": [{
-            "command": "dirtyswp.listswp",
-            "key": "ctrl+d ctrl+l",
-            "mac": "cmd+d cmd+l",
-            "when": "editorTextFocus"
-        }]
+        "keybindings": [
+            {
+                "command": "dirtyswp.listswp",
+                "key": "ctrl+d ctrl+l",
+                "mac": "cmd+d cmd+l",
+                "when": "editorTextFocus"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "npm run compile",

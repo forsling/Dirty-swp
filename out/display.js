@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.showDialog = exports.warn = exports.listSwp = void 0;
 const vscode = require("vscode");
 const fs = require("fs");
+const extension_1 = require("./extension");
 const listSwp = function () {
     let listItems = [];
     //Add lock until close action (if applicable)
