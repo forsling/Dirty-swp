@@ -1,89 +1,85 @@
 {
-	"name": "dirtyswp",
-	"displayName": "Dirty.swp",
-	"description": "Vim .swp file detection & locking",
-	"version": "0.8.1",
-	"publisher": "forsling",
-	"icon": "images/logo512.png",
-	"engines": {
-		"vscode": "^1.45.0"
-	},
-	"categories": [
-		"Other"
-	],
-	"activationEvents": [
-		"*"
-	],
-	"main": "./extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "dirtyswp.start",
-				"title": "Dirty.swp: Start"
-			},
-			{
-				"command": "dirtyswp.stop",
-				"title": "Dirty.swp: Pause"
-			},
-			{
-				"command": "dirtyswp.listswp",
-				"title": "Dirty.swp: List locked files"
-			},
-			{
-				"command": "dirtyswp.lockuntilclose",
-				"title": "Dirty.swp: Lock file until close"
-			}
-		],
-		"configuration": {
-			"type": "object",
-			"title": "Dirty.swp",
-			"properties": {
-				"dirtyswp.startActive": {
-					"type": "boolean",
-					"default": true,
-					"description": "Whether or not Dirty.swp starts with active locking/monitoring of files"
-				},
-				"dirtyswp.showStatusBarItem": {
-					"type": "boolean",
-					"default": true,
-					"description": "Show .swp statusbar item"
-				},
-				"dirtyswp.writeNameToSwp": {
-					"type": "string",
-					"default": "",
-					"description": "Writes optional name to your .swp files to display to others who has locked the file"
-				}
-			}
-		},
-		"keybindings": [
-			{
-				"command": "dirtyswp.listswp",
-				"key": "ctrl+d ctrl+s",
-				"mac": "cmd+d cmd+s",
-				"when": "editorTextFocus"
-			},
-			{
-				"command": "dirtyswp.lockuntilclose",
-				"key": "ctrl+d ctrl+l",
-				"mac": "cmd+d cmd+l",
-				"when": "editorTextFocus"
-			}
-		]
-	},
-	"scripts": {
-		"lint": "eslint .",
-		"pretest": "npm run lint",
-		"test": "node ./test/runTest.js"
-	},
-	"devDependencies": {
-		"@types/vscode": "^1.45.0",
-		"@types/glob": "^7.1.1",
-		"@types/mocha": "^7.0.2",
-		"@types/node": "^13.11.0",
-		"eslint": "^6.8.0",
-		"glob": "^7.1.6",
-		"mocha": "^7.1.2",
-		"typescript": "^3.8.3",
-		"vscode-test": "^1.3.0"
-	}
+    "name": "dirtyswp",
+    "displayName": "Dirty.swp",
+    "description": "Vim .swp file detection & locking",
+    "version": "0.9.0",
+    "publisher": "forsling",
+    "icon": "images/logo512.png",
+    "engines": {
+        "vscode": "^1.45.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "activationEvents": [
+        "*"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [{
+                "command": "dirtyswp.start",
+                "title": "Dirty.swp: Start"
+            },
+            {
+                "command": "dirtyswp.stop",
+                "title": "Dirty.swp: Pause"
+            },
+            {
+                "command": "dirtyswp.listswp",
+                "title": "Dirty.swp: List locked files"
+            },
+            {
+                "command": "dirtyswp.lockuntilclose",
+                "title": "Dirty.swp: Lock file until close"
+            }
+        ],
+        "configuration": {
+            "type": "object",
+            "title": "Dirty.swp",
+            "properties": {
+                "dirtyswp.startActive": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Whether or not Dirty.swp starts with active locking/monitoring of files"
+                },
+                "dirtyswp.showStatusBarItem": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Show .swp statusbar item"
+                },
+                "dirtyswp.writeNameToSwp": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Writes optional name to your .swp files to display to others who has locked the file"
+                }
+            }
+        },
+        "keybindings": [{
+            "command": "dirtyswp.listswp",
+            "key": "ctrl+d ctrl+l",
+            "mac": "cmd+d cmd+l",
+            "when": "editorTextFocus"
+        }]
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "lint": "eslint src --ext ts",
+        "watch": "tsc -watch -p ./",
+        "pretest": "npm run compile && npm run lint",
+        "test": "node ./out/test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.45.0",
+        "@types/glob": "^7.1.1",
+        "@types/mocha": "^7.0.2",
+        "@types/node": "^13.11.0",
+        "eslint": "^6.8.0",
+        "@typescript-eslint/parser": "^2.30.0",
+        "@typescript-eslint/eslint-plugin": "^2.30.0",
+        "glob": "^7.1.6",
+        "mocha": "^7.1.2",
+        "typescript": "^3.8.3",
+        "vscode-test": "^1.3.0"
+    }
 }
