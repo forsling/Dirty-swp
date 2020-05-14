@@ -62,7 +62,9 @@ function activate(context) {
 
         //warn user if file is being edited somewhere else
         hasSwp(docinfo, () => {
-            vscode.window.showWarningMessage(docinfo.basename + " is in use somewhere else (.swp file exists)")
+            ifNotOurSwp(docinfo, (swp) => {
+                warn(docinfo.basename, false, swp);
+            });
         })
         console.log(documents);
     })
@@ -106,12 +108,7 @@ function activate(context) {
                     } else {
                         // if it is in use by someone else then there is a risk of overwriting someone elses changes
                         doc.potentialUnsyncedChanges = true;
-                        var inUseMessage = " is in use someplace else: If you save your changes you may overwrite somebody elses!";
-                        if (fileSwp.vscodeSwp && fileSwp.user) {
-                            inUseMessage = ` is in use by ${fileSwp.user}: If you save you may overwrite their changes!`;                            
-                        }
-                        vscode.window.showWarningMessage(doc.basename + inUseMessage, 'Open Dialog', 'Save As Dialog')
-                            .then((choice) => showDialog(choice));
+                        warn(doc.basename, true, fileSwp);
                     }
                 });
 
@@ -313,9 +310,8 @@ function tryLockFile(docinfo) {
     //if the file has a swp here then somebody else may be editing it
     hasSwp(docinfo, () => {
         //check the .swp file if it really isn't ours
-        ifNotOurSwp(docinfo, () => {
-            vscode.window.showWarningMessage(docinfo.basename + " is in use someplace else: If you save your changes you may overwrite somebody elses!", 'Open Dialog', 'Save As Dialog')
-            .then((choice) => showDialog(choice));
+        ifNotOurSwp(docinfo, (swp) => {
+            warn(docinfo.basename, true, swp);
         });
     }, () => {
         //if there is no current swp but the file is dirty we should lock it for ourselves
@@ -378,15 +374,39 @@ function addOpenDocuments(createSwpIfDirty = false) {
         if (!docinfo.hasOurSwp) {
             hasSwp(docinfo, () => {
                 ifNotOurSwp(docinfo, (swp) => {
-                    var inUseMessage = " is in use somewhere else";
-                    if (swp.vscodeSwp && swp.user) {
-                        inUseMessage = ` is in use by ${swp.user}`;
-                    }
-                    vscode.window.showWarningMessage(docinfo.basename + inUseMessage + " (.swp file exists)");
+                    warn(docinfo.basename, false, swp);
                 });
             })
         }
     })
+}
+
+function warn(filename, editing, swp = null) {
+    let user = false;
+    if (swp && swp.vscodeSwp && swp.user) {
+        user = swp.user;
+    }
+
+    let part1 = "is in use someplace else";
+    if (user) {
+        part1 = "is in use by " + user;
+    }
+    let part2 = " (.swp file exists)";
+    if (editing) {
+        part2 = ". If you save your changes you may overwrite ";
+        if (user) {
+            part2 += "theirs!";
+        } else {
+            part2 += "someone elses!";
+        }
+    }
+    
+    let message = `${filename} ${part1}${part2}`;
+    if (editing) {
+        vscode.window.showWarningMessage(message, 'Open Dialog', 'Save As Dialog').then((choice) => showDialog(choice));
+    } else {
+        vscode.window.showWarningMessage(message)
+    }
 }
 
 function showDialog(choice) {
