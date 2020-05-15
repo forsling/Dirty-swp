@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.showDialog = exports.warn = exports.listSwp = void 0;
 const vscode = require("vscode");
 const fs = require("fs");
+const core_1 = require("./core");
 const extension_1 = require("./extension");
 const listSwp = function () {
     let listItems = [];
@@ -17,7 +18,7 @@ const listSwp = function () {
         else {
             currentDocKey = "";
         }
-        currentDoc = extension_1.DsDocs[currentDocKey];
+        currentDoc = core_1.DsDocs[currentDocKey];
         let showLockAction = true;
         if (typeof currentDoc === 'undefined' || !currentDoc || currentDoc.forceLock) {
             showLockAction = false;
@@ -56,7 +57,7 @@ const listSwp = function () {
         });
     }
     //Add all known locked files and their status
-    Object.entries(extension_1.DsDocs).forEach(entry => {
+    Object.entries(core_1.DsDocs).forEach(entry => {
         let doc = entry[1];
         let description;
         if (doc.hasOurSwp) {

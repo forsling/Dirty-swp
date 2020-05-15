@@ -35,7 +35,7 @@ class DsDocument {
             if (self.hasOurSwp) {
                 fs.unlink(self.swapPath, (err) => {
                     if (err) {
-                        console.error("Unable to remove own .swp");
+                        vscode.window.showErrorMessage("Unable to remove own .swp: " + err);
                     }
                 });
                 self.hasOurSwp = false;
@@ -68,7 +68,7 @@ class swpFile {
     }
 }
 
-let checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) => void, noSwpCallback: () => void) {
+const checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) => void, noSwpCallback: () => void) {
     fs.stat(dsDoc.swapPath, (err, stats) => {
         if (err) {
             if (err.code === 'ENOENT') {
@@ -97,7 +97,7 @@ let checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) 
     })
 }
 
-let tryLockFile = function(dsDoc: DsDocument) {
+const tryLockFile = function(dsDoc: DsDocument) {
     //If the file is locked by us then editing is fine and nothing else needs to be done
     if (dsDoc.hasOurSwp) {
         return;
@@ -124,25 +124,25 @@ const addOpenDocuments = function(createSwpIfDirty = false) {
         if (openDocument.uri.scheme != "file") {
             return
         }
-        let docinfo = new DsDocument(openDocument)
-        DsDocs[docinfo.textDocument.uri.toString()] = docinfo;
-        if (createSwpIfDirty && docinfo.textDocument.isDirty) {
-            tryLockFile(docinfo);
+        let dsDoc = new DsDocument(openDocument)
+        DsDocs[dsDoc.textDocument.uri.toString()] = dsDoc;
+        if (createSwpIfDirty && dsDoc.textDocument.isDirty) {
+            tryLockFile(dsDoc);
         }
 
-        if (!docinfo.hasOurSwp) {
-			checkSwp(docinfo, (swp) => {
-				ds.warn(docinfo.basename, false, swp);
+        if (!dsDoc.hasOurSwp) {
+			checkSwp(dsDoc, (swp) => {
+				ds.warn(dsDoc.basename, false, swp);
 			}, () => {});
         }
     })
 }
 
-let emptyDocs = function() {
+const emptyDocs = function() {
     DsDocs = {};
 }
 
-let getFullSwpString = function() {
+const getFullSwpString = function() {
     let swpName: string = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp') || "";
     if (swpName) {
         return swpString + ":" + swpName;
@@ -153,11 +153,10 @@ let getFullSwpString = function() {
 export { 
     DsDocument, 
     DsDocArray, 
-    swpFile,
     DsDocs, 
+    swpFile,
     swpString, 
     emptyDocs, 
-    getFullSwpString, 
     checkSwp, 
     tryLockFile, 
     addOpenDocuments 

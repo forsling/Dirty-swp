@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addOpenDocuments = exports.tryLockFile = exports.checkSwp = exports.getFullSwpString = exports.emptyDocs = exports.swpString = exports.DsDocs = exports.swpFile = exports.DsDocument = void 0;
+exports.addOpenDocuments = exports.tryLockFile = exports.checkSwp = exports.emptyDocs = exports.swpString = exports.swpFile = exports.DsDocs = exports.DsDocument = void 0;
 const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
@@ -27,7 +27,7 @@ class DsDocument {
             if (self.hasOurSwp) {
                 fs.unlink(self.swapPath, (err) => {
                     if (err) {
-                        console.error("Unable to remove own .swp");
+                        vscode.window.showErrorMessage("Unable to remove own .swp: " + err);
                     }
                 });
                 self.hasOurSwp = false;
@@ -53,7 +53,7 @@ class swpFile {
     }
 }
 exports.swpFile = swpFile;
-let checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
+const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
     fs.stat(dsDoc.swapPath, (err, stats) => {
         if (err) {
             if (err.code === 'ENOENT') {
@@ -86,7 +86,7 @@ let checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
     });
 };
 exports.checkSwp = checkSwp;
-let tryLockFile = function (dsDoc) {
+const tryLockFile = function (dsDoc) {
     //If the file is locked by us then editing is fine and nothing else needs to be done
     if (dsDoc.hasOurSwp) {
         return;
@@ -114,29 +114,28 @@ const addOpenDocuments = function (createSwpIfDirty = false) {
         if (openDocument.uri.scheme != "file") {
             return;
         }
-        let docinfo = new DsDocument(openDocument);
-        DsDocs[docinfo.textDocument.uri.toString()] = docinfo;
-        if (createSwpIfDirty && docinfo.textDocument.isDirty) {
-            tryLockFile(docinfo);
+        let dsDoc = new DsDocument(openDocument);
+        DsDocs[dsDoc.textDocument.uri.toString()] = dsDoc;
+        if (createSwpIfDirty && dsDoc.textDocument.isDirty) {
+            tryLockFile(dsDoc);
         }
-        if (!docinfo.hasOurSwp) {
-            checkSwp(docinfo, (swp) => {
-                ds.warn(docinfo.basename, false, swp);
+        if (!dsDoc.hasOurSwp) {
+            checkSwp(dsDoc, (swp) => {
+                ds.warn(dsDoc.basename, false, swp);
             }, () => { });
         }
     });
 };
 exports.addOpenDocuments = addOpenDocuments;
-let emptyDocs = function () {
+const emptyDocs = function () {
     exports.DsDocs = DsDocs = {};
 };
 exports.emptyDocs = emptyDocs;
-let getFullSwpString = function () {
+const getFullSwpString = function () {
     let swpName = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp') || "";
     if (swpName) {
         return swpString + ":" + swpName;
     }
     return swpString;
 };
-exports.getFullSwpString = getFullSwpString;
 //# sourceMappingURL=core.js.map

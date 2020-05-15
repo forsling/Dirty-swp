@@ -1,11 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.swpString = exports.active = exports.DsDocs = exports.deactivate = exports.activate = void 0;
+exports.active = exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const ds = require("./display");
 const core_1 = require("./core");
-Object.defineProperty(exports, "DsDocs", { enumerable: true, get: function () { return core_1.DsDocs; } });
-Object.defineProperty(exports, "swpString", { enumerable: true, get: function () { return core_1.swpString; } });
 let swpStatusBar;
 let active = true;
 exports.active = active;
@@ -47,7 +45,6 @@ function activate(context) {
         if (!active || e.document.uri.scheme != "file") {
             return;
         }
-        let test = e.document.uri.toString();
         let doc = core_1.DsDocs[e.document.uri.toString()];
         if (!doc.textDocument.isDirty) {
             doc.potentialUnsyncedChanges = false;

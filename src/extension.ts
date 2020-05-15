@@ -51,7 +51,6 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		let test = e.document.uri.toString();
 		let doc = DsDocs[e.document.uri.toString()];
 		if (!doc.textDocument.isDirty) {
 			doc.potentialUnsyncedChanges = false;
@@ -158,4 +157,4 @@ export function deactivate() {
 	emptyDocs();
     active = false;
 }
-export { DsDocs, active, swpString };
+export { active };
