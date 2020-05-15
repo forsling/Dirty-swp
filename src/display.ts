@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from "fs";
-import { swpFile, DsDocument } from "./types";
+import { swpFile, DsDocument } from "./core";
 import { DsDocs, active } from './extension';
 
 const listSwp = function() {

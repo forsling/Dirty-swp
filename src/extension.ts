@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as ds from './display';
-import { DsDocument, DsDocArray } from './types';
-import { DsDocs, swpString, checkSwp, tryLockFile, emptyDocs } from './core';
+import { DsDocument, DsDocs, swpString, checkSwp, tryLockFile, addOpenDocuments, emptyDocs } from './core';
 
 let swpStatusBar: vscode.StatusBarItem;
 let active: boolean = true;
@@ -150,25 +149,6 @@ export function activate(context: vscode.ExtensionContext) {
 		swpStatusBar.show();
 	}
 	context.subscriptions.push(swpStatusBar);
-}
-
-function addOpenDocuments(createSwpIfDirty = false) {
-    vscode.workspace.textDocuments.forEach((openDocument) => {
-        if (openDocument.uri.scheme != "file") {
-            return
-        }
-        let docinfo = new DsDocument(openDocument)
-        DsDocs[docinfo.textDocument.uri.toString()] = docinfo;
-        if (createSwpIfDirty && docinfo.textDocument.isDirty) {
-            tryLockFile(docinfo);
-        }
-
-        if (!docinfo.hasOurSwp) {
-			checkSwp(docinfo, (swp) => {
-				ds.warn(docinfo.basename, false, swp);
-			}, () => {});
-        }
-    })
 }
 
 export function deactivate() { 
