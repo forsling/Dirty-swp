@@ -8,7 +8,6 @@ const ds = require("./display");
 const fs = require("fs");
 const swpString = "VSCODE/" + vscode.env.machineId;
 exports.swpString = swpString;
-let userPart = "";
 let fullSwpString = swpString;
 exports.fullSwpString = fullSwpString;
 let DsDocs = {};
@@ -19,8 +18,7 @@ exports.active = active;
 function activate(context) {
     let swpName = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp') || "";
     if (typeof swpName != 'undefined' && swpName) {
-        userPart = swpName;
-        exports.fullSwpString = fullSwpString = swpString + ":" + userPart;
+        exports.fullSwpString = fullSwpString = swpString + ":" + swpName;
     }
     exports.active = active = vscode.workspace.getConfiguration().get('dirtyswp.startActive') || true;
     let statusBarEnabled = vscode.workspace.getConfiguration().get('dirtyswp.showStatusBarItem');
@@ -73,7 +71,7 @@ function activate(context) {
                 else {
                     //if the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
                     try {
-                        fs.writeFileSync(doc.swapPath, swpString + userPart);
+                        fs.writeFileSync(doc.swapPath, fullSwpString);
                         doc.hasOurSwp = true;
                     }
                     catch (err) {

@@ -5,7 +5,6 @@ import * as ds from './display';
 import * as fs from 'fs';
 
 const swpString: string = "VSCODE/" + vscode.env.machineId;
-let userPart: string = "";
 let fullSwpString: string = swpString;
 let DsDocs: DsDocArray = {};
 let swpStatusBar: vscode.StatusBarItem;
@@ -14,8 +13,7 @@ let active: boolean = true;
 export function activate(context: vscode.ExtensionContext) {
 	let swpName: string = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp') || "";
 	if (typeof swpName != 'undefined' && swpName) {
-		userPart = swpName;
-		fullSwpString = swpString + ":" + userPart;
+		fullSwpString = swpString + ":" + swpName;
 	}
 
 	active = vscode.workspace.getConfiguration().get('dirtyswp.startActive') || true;
@@ -76,7 +74,7 @@ export function activate(context: vscode.ExtensionContext) {
 				} else {
 					//if the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
 					try {
-						fs.writeFileSync(doc.swapPath, swpString + userPart);
+						fs.writeFileSync(doc.swapPath, fullSwpString);
 						doc.hasOurSwp = true;
 					} catch (err) {
 						vscode.window.showErrorMessage("Writing .swp failed: " + err);

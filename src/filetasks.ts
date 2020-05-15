@@ -17,10 +17,11 @@ let checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) 
                 //Must be other .swp as we would never create a .swp this big
                 hasOthersSwpCallback(new swpFile("OTHER"));
             } else {
+                //Check if it isn't our swp after all, could be from a lost session
                 fs.readFile(dsDoc.swapPath, "utf-8", (err, data) => {
                     let firstPart: string = data.split(":")[0];
                     if (!err && firstPart === swpString) {
-                        console.log("Found our .swp at " + dsDoc.swapPath);
+                        console.log("Reclaimed own .swp at " + dsDoc.swapPath);
                         dsDoc.hasOurSwp = true; 
                     } else {
                         var swp = new swpFile(data);
