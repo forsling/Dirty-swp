@@ -104,23 +104,19 @@ function hasSwpSync(dsDoc: DsDocument) {
 }
 
 const warn = function(filename: string, editing: boolean, swp: null | swpFile) {
-    let user : false | string = false;
-    if (swp && swp.vscodeSwp && swp.swpUser) {
-        user = swp.swpUser;
+    let user : false | string = "non-Dirty.swp user"
+    if (swp && swp.vscodeSwp) {
+        if (swp.swpUser) {
+            user = swp.swpUser;
+        } else {
+            user = "unknown Dirty.swp user"
+        } 
     }
+    let part1 = "is in use by " + user;
 
-    let part1 = "is in use someplace else";
-    if (user) {
-        part1 = "is in use by " + user;
-    }
     let part2 = " (.swp file exists)";
     if (editing) {
-        part2 = ". If you save your changes you may overwrite ";
-        if (user) {
-            part2 += "theirs!";
-        } else {
-            part2 += "someone elses!";
-        }
+        part2 = ". If you save your now you may overwrite their changes.";
     }
     
     let message = `${filename} ${part1}${part2}`;
