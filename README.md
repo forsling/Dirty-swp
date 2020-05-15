@@ -1,12 +1,16 @@
-# Dirty.swp
+# Dirty.swp for Visual Studio Code
 
 .swp file locking and detection
 
-This extension is beta, use with caution!
+This extension is beta, use with caution! I cannot guarantee that it will work every time.
 
 Dirty.swp helps editing in shared environments by locking files you are edting by creating .swp files (like Vim). 
 The extension also detects and warns you if anyone else is editing the files you open or are editing yourself. 
 By default any dirty file will be locked but you have the ability to lock files until you close them.
+
+## Limitations
+Dirty.swp does not create valid Vim .swp files but rather just simple file containing a unique machine id and an 
+optional name (which can be set in settings and will show other Dirty.swp users who has locked a file).
 
 ## Commands
 Dirty.swp has four commands:
