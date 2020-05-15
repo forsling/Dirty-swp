@@ -52,7 +52,7 @@ class swpFile {
         this.vscodeSwp = false;
         this.swpId = null;
         this.swpUser = null;
-        if (fileData.length >= 6 && fileData.substring(0, 6) !== "VSCODE") {
+        if (fileData.length < 6 || fileData.substring(0, 6) !== "VSCODE") {
             return;
         }
         let temp: string[] = fileData.split(":");
