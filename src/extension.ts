@@ -1,15 +1,8 @@
 import * as vscode from 'vscode';
-import * as fs from 'fs';
-
 import * as ds from './display';
-import { DsDocument, swpFile, DsDocArray } from './types';
-import { checkSwp, tryLockFile } from './filetasks';
+import { DsDocument, DsDocArray } from './types';
+import { DsDocs, swpString, checkSwp, tryLockFile, emptyDocs } from './core';
 
-
-const swpString: string = "VSCODE/" + vscode.env.machineId;
-let fullSwpString: string = swpString;
-
-let DsDocs: DsDocArray = {};
 let swpStatusBar: vscode.StatusBarItem;
 let active: boolean = true;
 
@@ -17,11 +10,6 @@ export function activate(context: vscode.ExtensionContext) {
 	/**********************
 	*  Handle settings
 	***********************/
-	let swpName: string = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp') || "";
-	if (typeof swpName != 'undefined' && swpName) {
-		fullSwpString = swpString + ":" + swpName;
-	}
-
 	active = vscode.workspace.getConfiguration().get('dirtyswp.startActive') || true;
 	let statusBarEnabled = vscode.workspace.getConfiguration().get('dirtyswp.showStatusBarItem');
 
@@ -68,28 +56,28 @@ export function activate(context: vscode.ExtensionContext) {
 		let doc = DsDocs[e.document.uri.toString()];
 		if (!doc.textDocument.isDirty) {
 			doc.potentialUnsyncedChanges = false;
-			//If file is no longer dirty, but still has our swp, then we can remove the .swp file (unless 'lock until close' is set)
+			//If file is no longer dirty, but still has our swp, 
+			//then we can remove the .swp file (unless 'lock until close' is set)
 			if (doc.hasOurSwp && !doc.forceLock) {
 				doc.removeOwnSwp();
 			}
 		}
-		else if (!doc.hasOurSwp) { //File has unsaved changes but is not locked by us
+		else if (!doc.hasOurSwp) { 
+			//File has unsaved changes but is not locked by us
 			checkSwp(doc, (swp) => {
 				doc.potentialUnsyncedChanges = true;
 				ds.warn(doc.basename, true, swp);
 			}, () => {
 				if (doc.potentialUnsyncedChanges) {
 					//Even if the file is no longer in use by someone else, there may still be changes that have not been loaded (since file is dirty)
-					vscode.window.showWarningMessage(doc.basename + " is no longer being edited elsewhere but may have unsynced changes: Save may overwrite changes!", 'Open Dialog', 'Save As Dialog')
+					vscode.window.showWarningMessage(
+						doc.basename + " is no longer being edited elsewhere but may have unsynced changes: Save may overwrite changes!",
+					 	'Open Dialog', 'Save As Dialog')
 						.then((choice) => ds.showDialog(choice));
 				} else {
-					//If the file is not currently locked and has no potential unloaded changes, then we may lock the file for ourselves
-					try {
-						fs.writeFileSync(doc.swapPath, fullSwpString);
-						doc.hasOurSwp = true;
-					} catch (err) {
-						vscode.window.showErrorMessage("Writing .swp failed: " + err);
-					}
+					//If the file is not currently locked and has no potential unloaded changes,
+					//then we may lock the file for ourselves
+					tryLockFile(doc);
 				}
 			});
 		}
@@ -187,7 +175,7 @@ export function deactivate() {
 	for (let doc of Object.keys(DsDocs)) {
         DsDocs[doc].removeOwnSwp();
     }
-    DsDocs = {};
+	emptyDocs();
     active = false;
 }
-export { DsDocs, active, swpString, fullSwpString };
+export { DsDocs, active, swpString };

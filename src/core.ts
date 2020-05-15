@@ -1,8 +1,11 @@
 import * as vscode from 'vscode';
 import * as fs from "fs";
-import { swpString, fullSwpString } from './extension';
-import { DsDocument, swpFile } from './types';
+import * as ds from './display';
+import { DsDocument, DsDocArray, swpFile } from './types';
 import { warn } from './display';
+
+const swpString: string = "VSCODE/" + vscode.env.machineId;
+let DsDocs: DsDocArray = {};
 
 let checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) => void, noSwpCallback: () => void) {
     fs.stat(dsDoc.swapPath, (err, stats) => {
@@ -43,17 +46,47 @@ let tryLockFile = function(dsDoc: DsDocument) {
     }, () => {
         //if there is no current swp but the file is dirty we should lock it for ourselves
         try {
-            fs.writeFileSync(dsDoc.swapPath, fullSwpString);
+            fs.writeFileSync(dsDoc.swapPath, getFullSwpString());
             dsDoc.hasOurSwp = true;
             console.log("Written swp: " + dsDoc.swapPath);
             return true;
         } catch (err) {
             dsDoc.hasOurSwp = false;
-            console.log("Writing swp failed: " + dsDoc.swapPath);
+            vscode.window.showErrorMessage("Writing .swp failed: " + err);
             return false;
         }
     });
 }
 
+const addOpenDocuments = function(createSwpIfDirty = false) {
+    vscode.workspace.textDocuments.forEach((openDocument) => {
+        if (openDocument.uri.scheme != "file") {
+            return
+        }
+        let docinfo = new DsDocument(openDocument)
+        DsDocs[docinfo.textDocument.uri.toString()] = docinfo;
+        if (createSwpIfDirty && docinfo.textDocument.isDirty) {
+            tryLockFile(docinfo);
+        }
 
-export { checkSwp, tryLockFile };
+        if (!docinfo.hasOurSwp) {
+			checkSwp(docinfo, (swp) => {
+				ds.warn(docinfo.basename, false, swp);
+			}, () => {});
+        }
+    })
+}
+
+let emptyDocs = function() {
+    DsDocs = {};
+}
+
+let getFullSwpString = function() {
+    let swpName: string = vscode.workspace.getConfiguration().get('dirtyswp.writeNameToSwp') || "";
+    if (swpName) {
+        return swpString + ":" + swpName;
+    }
+    return swpString;
+}
+
+export { DsDocs, emptyDocs, swpString, getFullSwpString, checkSwp, tryLockFile, addOpenDocuments };
