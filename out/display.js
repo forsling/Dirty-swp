@@ -106,7 +106,7 @@ const warn = function (filename, editing, swp) {
     let user = "non-Dirty.swp user";
     if (swp && swp.swpType === "vscode") {
         if (swp.swpUser) {
-            user = swp.swpUser;
+            user = swp.swpUser.length <= 20 ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";
         }
         else {
             user = "unknown VS Code user";
