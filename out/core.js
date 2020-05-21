@@ -38,14 +38,19 @@ class DsDocument {
 exports.DsDocument = DsDocument;
 class swpFile {
     constructor(fileData) {
-        this.vscodeSwp = false;
+        this.data = fileData;
+        this.swpType = "other";
         this.swpId = null;
         this.swpUser = null;
-        if (fileData.length < 6 || fileData.substring(0, 6) !== "VSCODE") {
+        if (fileData.length > 5 && fileData.startsWith("b0VIM")) {
+            this.swpType = "vim";
+            return;
+        }
+        else if (fileData.length < 6 || fileData.substring(0, 6) !== "VSCODE") {
             return;
         }
         let temp = fileData.split(":");
-        this.vscodeSwp = true;
+        this.swpType = "vscode";
         this.swpId = temp[0];
         if (temp.length > 1) {
             this.swpUser = temp[1];
@@ -53,34 +58,50 @@ class swpFile {
     }
 }
 exports.swpFile = swpFile;
+const readFile = function (dpath, callback) {
+    fs.stat(dpath, (err, stats) => {
+        if (err) {
+            callback(err, "", null);
+            return;
+        }
+        fs.open(dpath, "r", (err, fd) => {
+            if (err) {
+                callback(err, "", stats);
+                return;
+            }
+            var bsize = Math.min(1024, stats.size);
+            var buffer = Buffer.alloc(bsize);
+            fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
+                if (err) {
+                    callback(err, "", stats);
+                    return;
+                }
+                var bstring = buffer.toString('utf8');
+                callback(null, bstring, stats);
+            });
+        });
+    });
+};
 const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
-    fs.stat(dsDoc.swapPath, (err, stats) => {
+    readFile(dsDoc.swapPath, (err, filestring, stats) => {
         if (err) {
             if (err.code === 'ENOENT') {
                 noSwpCallback();
             }
             else {
-                vscode.window.showErrorMessage("Dirty .swp error: " + err.message);
+                vscode.window.showErrorMessage("Dirty.swp error: " + err.message);
             }
         }
         else {
-            if (stats.size > 5000) {
-                //Must be other .swp as we would never create a .swp this big
-                hasOthersSwpCallback(new swpFile("OTHER"));
+            //Check if it isn't our swp after all, could be from a lost session
+            let firstPart = filestring.split(":")[0];
+            if (!err && firstPart === swpString) {
+                console.log("Reclaimed own .swp at " + dsDoc.swapPath);
+                dsDoc.hasOurSwp = true;
             }
             else {
-                //Check if it isn't our swp after all, could be from a lost session
-                fs.readFile(dsDoc.swapPath, "utf-8", (err, data) => {
-                    let firstPart = data.split(":")[0];
-                    if (!err && firstPart === swpString) {
-                        console.log("Reclaimed own .swp at " + dsDoc.swapPath);
-                        dsDoc.hasOurSwp = true;
-                    }
-                    else {
-                        var swp = new swpFile(data);
-                        hasOthersSwpCallback(swp);
-                    }
-                });
+                var swp = new swpFile(filestring);
+                hasOthersSwpCallback(swp);
             }
         }
     });

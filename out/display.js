@@ -104,13 +104,16 @@ function hasSwpSync(dsDoc) {
 }
 const warn = function (filename, editing, swp) {
     let user = "non-Dirty.swp user";
-    if (swp && swp.vscodeSwp) {
+    if (swp && swp.swpType === "vscode") {
         if (swp.swpUser) {
             user = swp.swpUser;
         }
         else {
-            user = "unknown Dirty.swp user";
+            user = "unknown VS Code user";
         }
+    }
+    else if (swp && swp.swpType === "vim") {
+        user = "a Vim user";
     }
     let part1 = "is in use by " + user;
     let part2 = " (.swp file exists)";

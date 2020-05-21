@@ -10,8 +10,7 @@ By default any dirty file will be locked but you have the ability to lock files 
 Use this extension at your own risk. I cannot guarantee that it will work flawlessly in all situations.
 
 ## Limitations
-Dirty.swp does not create valid Vim .swp files but rather just simple file containing a unique machine id and an 
-optional name (which can be set in settings and will show other Dirty.swp users who has locked a file).
+Dirty.swp does not create valid Vim swap files but rather just simple file containing a unique machine id and an optional name (which can be set in settings and will show other Dirty.swp users who has locked a file).
 
 ## Commands
 Dirty.swp has four commands:
