@@ -9,7 +9,7 @@ By default any dirty file will be locked but you have the ability to lock files 
 ## Disclaimer
 Use this extension at your own risk. I cannot guarantee that it will work flawlessly in all situations.
 
-## Limitations
+### Limitations
 Dirty.swp does not create valid Vim swap files but rather just simple file containing a unique machine id and an optional name (which can be set in settings and will show other Dirty.swp users who has locked a file).
 
 ## Commands
@@ -25,3 +25,6 @@ Whether Dirty.swp starts active or paused can be toggled in the settings.
 ## Status bar
 By default Dirty.swp comes with a status bar item (label: .swp) in the bottom left that opens the Dirty.swp menu (List locked files command).
 The status bar item can be disabled in settings.
+
+## Repository
+[Dirty.swp on Github](https://github.com/forsling/Dirty-swp)

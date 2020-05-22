@@ -75,9 +75,7 @@ class swpFile {
 
 const readFile = function(
     dpath: string, 
-    callback: (err: NodeJS.ErrnoException | null, 
-    filestring: string, 
-    stats: fs.Stats | null) => void) {
+    callback: (err: NodeJS.ErrnoException | null, filestring: string, stats: fs.Stats | null) => void) {
         fs.stat(dpath, (err, stats) => {
             if (err) {
                 callback(err, "", null);
