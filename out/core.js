@@ -107,7 +107,7 @@ const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
     });
 };
 exports.checkSwp = checkSwp;
-const lockFile = function (dsDoc) {
+const lockFile = function (dsDoc, allowRetry = true) {
     //If the file is locked by us then editing is fine and nothing else needs to be done
     if (dsDoc.hasOurSwp) {
         return;
@@ -118,8 +118,13 @@ const lockFile = function (dsDoc) {
         //If there is no current swp but the file is dirty we should lock it for ourselves
         fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
             if (err) {
-                dsDoc.hasOurSwp = false;
-                vscode.window.showErrorMessage("Writing .swp failed: " + err);
+                if (allowRetry && err.code === "EEXIST") {
+                    //Recurse once if a .swp file appeared just after we checked but before the write
+                    lockFile(dsDoc, false);
+                }
+                else {
+                    vscode.window.showErrorMessage("Writing .swp failed: " + err);
+                }
             }
             else {
                 dsDoc.hasOurSwp = true;
