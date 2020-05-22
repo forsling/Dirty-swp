@@ -68,7 +68,7 @@ function activate(context) {
                 else {
                     //If the file is not currently locked and has no potential unloaded changes,
                     //then we may lock the file for ourselves
-                    core_1.tryLockFile(doc);
+                    core_1.lockFile(doc);
                 }
             });
         }
@@ -97,7 +97,7 @@ function activate(context) {
         }
         vscode.window.showInformationMessage("Resuming .swp monitoring and locking");
         exports.active = active = true;
-        core_1.addOpenDocuments(true);
+        addOpenDocuments(true);
     });
     context.subscriptions.push(startCmd);
     let stopCmd = vscode.commands.registerCommand('dirtyswp.stop', () => {
@@ -116,7 +116,7 @@ function activate(context) {
         let name = vscode.window.activeTextEditor.document.uri.toString();
         let dsDoc = core_1.DsDocs[name];
         dsDoc.forceLock = true;
-        core_1.tryLockFile(dsDoc);
+        core_1.lockFile(dsDoc);
     });
     context.subscriptions.push(lockCmd);
     let listCmd = vscode.commands.registerCommand('dirtyswp.listswp', ds.listSwp);
@@ -125,7 +125,7 @@ function activate(context) {
     *  Other stuff
     ***********************/
     //Add any documents open on start
-    core_1.addOpenDocuments();
+    addOpenDocuments();
     //Create status bar
     swpStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
     swpStatusBar.text = ".swp";
@@ -136,6 +136,23 @@ function activate(context) {
     context.subscriptions.push(swpStatusBar);
 }
 exports.activate = activate;
+const addOpenDocuments = function (createSwpIfDirty = false) {
+    vscode.workspace.textDocuments.forEach((openDocument) => {
+        if (openDocument.uri.scheme != "file") {
+            return;
+        }
+        let dsDoc = new core_1.DsDocument(openDocument);
+        core_1.DsDocs[dsDoc.textDocument.uri.toString()] = dsDoc;
+        if (createSwpIfDirty && dsDoc.textDocument.isDirty) {
+            core_1.lockFile(dsDoc);
+        }
+        if (!dsDoc.hasOurSwp) {
+            core_1.checkSwp(dsDoc, (swp) => {
+                ds.warn(dsDoc.basename, false, swp);
+            }, () => { });
+        }
+    });
+};
 function deactivate() {
     for (let doc of Object.keys(core_1.DsDocs)) {
         core_1.DsDocs[doc].removeOwnSwp();

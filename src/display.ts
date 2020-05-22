@@ -104,7 +104,7 @@ function hasSwpSync(dsDoc: DsDocument) {
 }
 
 const warn = function(filename: string, editing: boolean, swp: null | swpFile) {
-    let user : false | string = "non-Dirty.swp user"
+    let user : false | string = "other party"
     if (swp && swp.swpType === "vscode") {
         if (swp.swpUser) {
             user = swp.swpUser.length <= 20 ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";

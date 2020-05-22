@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as ds from './display';
-import { DsDocument, DsDocs, swpString, checkSwp, tryLockFile, addOpenDocuments, emptyDocs } from './core';
+import { DsDocument, DsDocs, swpString, checkSwp, lockFile, emptyDocs } from './core';
 
 let swpStatusBar: vscode.StatusBarItem;
 let active: boolean = true;
@@ -75,7 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
 				} else {
 					//If the file is not currently locked and has no potential unloaded changes,
 					//then we may lock the file for ourselves
-					tryLockFile(doc);
+					lockFile(doc);
 				}
 			});
 		}
@@ -126,7 +126,7 @@ export function activate(context: vscode.ExtensionContext) {
 		let name = vscode.window.activeTextEditor.document.uri.toString();
 		let dsDoc = DsDocs[name];
 		dsDoc.forceLock = true;
-		tryLockFile(dsDoc)
+		lockFile(dsDoc)
 	});
 	context.subscriptions.push(lockCmd);
 
@@ -148,6 +148,25 @@ export function activate(context: vscode.ExtensionContext) {
 		swpStatusBar.show();
 	}
 	context.subscriptions.push(swpStatusBar);
+}
+
+const addOpenDocuments = function(createSwpIfDirty = false) {
+    vscode.workspace.textDocuments.forEach((openDocument) => {
+        if (openDocument.uri.scheme != "file") {
+            return
+        }
+        let dsDoc = new DsDocument(openDocument)
+        DsDocs[dsDoc.textDocument.uri.toString()] = dsDoc;
+        if (createSwpIfDirty && dsDoc.textDocument.isDirty) {
+            lockFile(dsDoc);
+        }
+
+        if (!dsDoc.hasOurSwp) {
+			checkSwp(dsDoc, (swp) => {
+				ds.warn(dsDoc.basename, false, swp);
+			}, () => {});
+        }
+    })
 }
 
 export function deactivate() { 

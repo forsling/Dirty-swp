@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addOpenDocuments = exports.tryLockFile = exports.checkSwp = exports.emptyDocs = exports.swpString = exports.swpFile = exports.DsDocs = exports.DsDocument = void 0;
+exports.lockFile = exports.checkSwp = exports.emptyDocs = exports.swpString = exports.swpFile = exports.DsDocs = exports.DsDocument = void 0;
 const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
@@ -107,7 +107,7 @@ const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
     });
 };
 exports.checkSwp = checkSwp;
-const tryLockFile = function (dsDoc) {
+const lockFile = function (dsDoc) {
     //If the file is locked by us then editing is fine and nothing else needs to be done
     if (dsDoc.hasOurSwp) {
         return;
@@ -116,38 +116,19 @@ const tryLockFile = function (dsDoc) {
         ds.warn(dsDoc.basename, true, swp);
     }, () => {
         //If there is no current swp but the file is dirty we should lock it for ourselves
-        try {
-            fs.writeFileSync(dsDoc.swapPath, getFullSwpString());
-            dsDoc.hasOurSwp = true;
-            console.log("Written swp: " + dsDoc.swapPath);
-            return true;
-        }
-        catch (err) {
-            dsDoc.hasOurSwp = false;
-            vscode.window.showErrorMessage("Writing .swp failed: " + err);
-            return false;
-        }
+        fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
+            if (err) {
+                dsDoc.hasOurSwp = false;
+                vscode.window.showErrorMessage("Writing .swp failed: " + err);
+            }
+            else {
+                dsDoc.hasOurSwp = true;
+                console.log("Written swp: " + dsDoc.swapPath);
+            }
+        });
     });
 };
-exports.tryLockFile = tryLockFile;
-const addOpenDocuments = function (createSwpIfDirty = false) {
-    vscode.workspace.textDocuments.forEach((openDocument) => {
-        if (openDocument.uri.scheme != "file") {
-            return;
-        }
-        let dsDoc = new DsDocument(openDocument);
-        DsDocs[dsDoc.textDocument.uri.toString()] = dsDoc;
-        if (createSwpIfDirty && dsDoc.textDocument.isDirty) {
-            tryLockFile(dsDoc);
-        }
-        if (!dsDoc.hasOurSwp) {
-            checkSwp(dsDoc, (swp) => {
-                ds.warn(dsDoc.basename, false, swp);
-            }, () => { });
-        }
-    });
-};
-exports.addOpenDocuments = addOpenDocuments;
+exports.lockFile = lockFile;
 const emptyDocs = function () {
     exports.DsDocs = DsDocs = {};
 };

@@ -73,58 +73,62 @@ class swpFile {
     }
 }
 
-const readFile = function(dpath: string, 
-                          callback: (err: NodeJS.ErrnoException | null, 
-                                    filestring: string,
-                                    stats: fs.Stats | null) => void) {
-    fs.stat(dpath, (err, stats) => {
-        if (err) {
-            callback(err, "", null);
-            return;
-        }
-        fs.open(dpath, "r", (err, fd) => {
+const readFile = function(
+    dpath: string, 
+    callback: (err: NodeJS.ErrnoException | null, 
+    filestring: string, 
+    stats: fs.Stats | null) => void) {
+        fs.stat(dpath, (err, stats) => {
             if (err) {
-                callback(err, "", stats);
+                callback(err, "", null);
                 return;
             }
-            var bsize = Math.min(1024, stats.size);
-            var buffer = Buffer.alloc(bsize);
-            fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
+            fs.open(dpath, "r", (err, fd) => {
                 if (err) {
                     callback(err, "", stats);
                     return;
                 }
-                var bstring = buffer.toString('utf8');
-                callback(null, bstring, stats);
+                var bsize = Math.min(1024, stats.size);
+                var buffer = Buffer.alloc(bsize);
+                fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
+                    if (err) {
+                        callback(err, "", stats);
+                        return;
+                    }
+                    var bstring = buffer.toString('utf8');
+                    callback(null, bstring, stats);
+                });
+
             });
-
         });
-    });
 }
 
-const checkSwp = function(dsDoc: DsDocument, hasOthersSwpCallback: (swp: swpFile) => void, noSwpCallback: () => void) {
-    readFile(dsDoc.swapPath, (err, filestring, stats) => {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                noSwpCallback();
+const checkSwp = function(
+    dsDoc: DsDocument, 
+    hasOthersSwpCallback: (swp: swpFile) => void, 
+    noSwpCallback: () => void) {
+        readFile(dsDoc.swapPath, (err, filestring, stats) => {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    noSwpCallback();
+                } else {
+                    vscode.window.showErrorMessage("Dirty.swp error: " + err.message)
+                }
             } else {
-                vscode.window.showErrorMessage("Dirty.swp error: " + err.message)
+                //Check if it isn't our swp after all, could be from a lost session
+                let firstPart: string = filestring.split(":")[0];
+                if (!err && firstPart === swpString) {
+                    console.log("Reclaimed own .swp at " + dsDoc.swapPath);
+                    dsDoc.hasOurSwp = true; 
+                } else {
+                    var swp = new swpFile(filestring);
+                    hasOthersSwpCallback(swp);
+                }
             }
-        } else {
-            //Check if it isn't our swp after all, could be from a lost session
-            let firstPart: string = filestring.split(":")[0];
-            if (!err && firstPart === swpString) {
-                console.log("Reclaimed own .swp at " + dsDoc.swapPath);
-                dsDoc.hasOurSwp = true; 
-            } else {
-                var swp = new swpFile(filestring);
-                hasOthersSwpCallback(swp);
-            }
-        }
-    });
+        });
 }
 
-const tryLockFile = function(dsDoc: DsDocument) {
+const lockFile = function(dsDoc: DsDocument) {
     //If the file is locked by us then editing is fine and nothing else needs to be done
     if (dsDoc.hasOurSwp) {
         return;
@@ -133,36 +137,16 @@ const tryLockFile = function(dsDoc: DsDocument) {
         ds.warn(dsDoc.basename, true, swp);
     }, () => {
         //If there is no current swp but the file is dirty we should lock it for ourselves
-        try {
-            fs.writeFileSync(dsDoc.swapPath, getFullSwpString());
-            dsDoc.hasOurSwp = true;
-            console.log("Written swp: " + dsDoc.swapPath);
-            return true;
-        } catch (err) {
-            dsDoc.hasOurSwp = false;
-            vscode.window.showErrorMessage("Writing .swp failed: " + err);
-            return false;
-        }
+        fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
+            if (err) {
+                dsDoc.hasOurSwp = false;
+                vscode.window.showErrorMessage("Writing .swp failed: " + err);
+            } else {
+                dsDoc.hasOurSwp = true;
+                console.log("Written swp: " + dsDoc.swapPath);
+            }
+        });
     });
-}
-
-const addOpenDocuments = function(createSwpIfDirty = false) {
-    vscode.workspace.textDocuments.forEach((openDocument) => {
-        if (openDocument.uri.scheme != "file") {
-            return
-        }
-        let dsDoc = new DsDocument(openDocument)
-        DsDocs[dsDoc.textDocument.uri.toString()] = dsDoc;
-        if (createSwpIfDirty && dsDoc.textDocument.isDirty) {
-            tryLockFile(dsDoc);
-        }
-
-        if (!dsDoc.hasOurSwp) {
-			checkSwp(dsDoc, (swp) => {
-				ds.warn(dsDoc.basename, false, swp);
-			}, () => {});
-        }
-    })
 }
 
 const emptyDocs = function() {
@@ -185,6 +169,5 @@ export {
     swpString, 
     emptyDocs, 
     checkSwp, 
-    tryLockFile, 
-    addOpenDocuments 
+    lockFile 
 };
