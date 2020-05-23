@@ -103,13 +103,14 @@ function hasSwpSync(dsDoc: DsDocument) {
     return false;
 }
 
-const warn = function(filename: string, editing: boolean, swp: null | swpFile) {
     let user : false | string = "other party"
     if (swp && swp.swpType === "vscode") {
         if (swp.swpUser) {
             user = swp.swpUser.length <= 20 ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";
         } else {
             user = "unknown VS Code user";
+const warn = function(dsDoc: DsDocument, editing: boolean, swp: null | swpFile) {
+        let filename = dsDoc.basename;
         } 
     } else if (swp && swp.swpType === "vim") {
         user = "a Vim user";

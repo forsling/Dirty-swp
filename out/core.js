@@ -113,7 +113,7 @@ const lockFile = function (dsDoc, allowRetry = true) {
         return;
     }
     checkSwp(dsDoc, (swp) => {
-        ds.warn(dsDoc.basename, true, swp);
+        ds.warn(dsDoc, true, swp);
     }, () => {
         //If there is no current swp but the file is dirty we should lock it for ourselves
         fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {

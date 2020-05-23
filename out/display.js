@@ -102,7 +102,8 @@ function hasSwpSync(dsDoc) {
     }
     return false;
 }
-const warn = function (filename, editing, swp) {
+const warn = function (dsDoc, editing, swp) {
+    let filename = dsDoc.basename;
     let user = "other party";
     if (swp && swp.swpType === "vscode") {
         if (swp.swpUser) {

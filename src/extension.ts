@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		//Warn user if file is being edited somewhere else
 		checkSwp(dsDoc, (swp) => {
-			ds.warn(dsDoc.basename, false, swp);
+			ds.warn(dsDoc, false, swp);
 		}, () => { });
 		console.log(DsDocs);
 	});
@@ -51,31 +51,31 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		let doc = DsDocs[e.document.uri.toString()];
-		if (!doc.textDocument.isDirty) {
-			doc.potentialUnsyncedChanges = false;
+		let dsDoc = DsDocs[e.document.uri.toString()];
+		if (!dsDoc.textDocument.isDirty) {
+			dsDoc.potentialUnsyncedChanges = false;
 			//If file is no longer dirty, but still has our swp, 
 			//then we can remove the .swp file (unless 'lock until close' is set)
-			if (doc.hasOurSwp && !doc.forceLock) {
-				doc.removeOwnSwp();
+			if (dsDoc.hasOurSwp && !dsDoc.forceLock) {
+				dsDoc.removeOwnSwp();
 			}
 		}
-		else if (!doc.hasOurSwp) { 
+		else if (!dsDoc.hasOurSwp) { 
 			//File has unsaved changes but is not locked by us
-			checkSwp(doc, (swp) => {
-				doc.potentialUnsyncedChanges = true;
-				ds.warn(doc.basename, true, swp);
+			checkSwp(dsDoc, (swp) => {
+				dsDoc.potentialUnsyncedChanges = true;
+				ds.warn(dsDoc, true, swp);
 			}, () => {
-				if (doc.potentialUnsyncedChanges) {
+				if (dsDoc.potentialUnsyncedChanges) {
 					//Even if the file is no longer in use by someone else, there may still be changes that have not been loaded (since file is dirty)
 					vscode.window.showWarningMessage(
-						doc.basename + " is no longer being edited elsewhere but may have unsynced changes: Save may overwrite changes!",
+						dsDoc.basename + " is no longer being edited elsewhere but may have unsynced changes: Save may overwrite changes!",
 					 	'Open Dialog', 'Save As Dialog')
 						.then((choice) => ds.showDialog(choice));
 				} else {
 					//If the file is not currently locked and has no potential unloaded changes,
 					//then we may lock the file for ourselves
-					lockFile(doc);
+					lockFile(dsDoc);
 				}
 			});
 		}
@@ -163,7 +163,7 @@ const addOpenDocuments = function(createSwpIfDirty = false) {
 
         if (!dsDoc.hasOurSwp) {
 			checkSwp(dsDoc, (swp) => {
-				ds.warn(dsDoc.basename, false, swp);
+				ds.warn(dsDoc, false, swp);
 			}, () => {});
         }
     })
