@@ -103,11 +103,17 @@ function hasSwpSync(dsDoc) {
     return false;
 }
 const warn = function (dsDoc, editing, swp) {
+    let now = new Date().getTime();
+    if (editing && dsDoc.lastEditWarning != null
+        && now - dsDoc.lastEditWarning < extension_1.timeBetweenEditWarnings) {
+        return;
+    }
     let filename = dsDoc.basename;
     let user = "other party";
     if (swp && swp.swpType === "vscode") {
         if (swp.swpUser) {
-            user = swp.swpUser.length <= 20 ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";
+            user = swp.swpUser.length <= 20
+                ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";
         }
         else {
             user = "unknown VS Code user";
@@ -123,7 +129,9 @@ const warn = function (dsDoc, editing, swp) {
     }
     let message = `${filename} ${part1}${part2}`;
     if (editing) {
-        vscode.window.showWarningMessage(message, 'Open Dialog', 'Save As Dialog').then((choice) => showDialog(choice));
+        vscode.window.showWarningMessage(message, 'Open Dialog', 'Save As Dialog')
+            .then((choice) => showDialog(choice));
+        dsDoc.lastEditWarning = Date.now();
     }
     else {
         vscode.window.showWarningMessage(message);

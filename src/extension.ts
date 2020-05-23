@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as ds from './display';
 import { DsDocument, DsDocs, swpString, checkSwp, lockFile, emptyDocs } from './core';
 
+const timeBetweenEditWarnings = 4000;
 let swpStatusBar: vscode.StatusBarItem;
 let active: boolean = true;
 
@@ -176,4 +177,4 @@ export function deactivate() {
 	emptyDocs();
     active = false;
 }
-export { active };
+export { active, timeBetweenEditWarnings };

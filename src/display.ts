@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from "fs";
 import { DsDocs, swpFile, DsDocument } from "./core";
-import { active } from './extension';
+import { active, timeBetweenEditWarnings } from './extension';
 
 const listSwp = function() {
     let listItems = [];
@@ -103,31 +103,40 @@ function hasSwpSync(dsDoc: DsDocument) {
     return false;
 }
 
-    let user : false | string = "other party"
-    if (swp && swp.swpType === "vscode") {
-        if (swp.swpUser) {
-            user = swp.swpUser.length <= 20 ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";
-        } else {
-            user = "unknown VS Code user";
 const warn = function(dsDoc: DsDocument, editing: boolean, swp: null | swpFile) {
-        let filename = dsDoc.basename;
-        } 
-    } else if (swp && swp.swpType === "vim") {
-        user = "a Vim user";
-    } 
-    let part1 = "is in use by " + user;
+        let now = new Date().getTime();
+        if (editing && dsDoc.lastEditWarning != null 
+            && now - dsDoc.lastEditWarning < timeBetweenEditWarnings) {
+            return;
+        }
 
-    let part2 = " (.swp file exists)";
-    if (editing) {
-        part2 = ". If you save your now you may overwrite their changes.";
-    }
-    
-    let message = `${filename} ${part1}${part2}`;
-    if (editing) {
-        vscode.window.showWarningMessage(message, 'Open Dialog', 'Save As Dialog').then((choice) => showDialog(choice));
-    } else {
-        vscode.window.showWarningMessage(message)
-    }
+        let filename = dsDoc.basename;
+        let user : false | string = "other party"
+        if (swp && swp.swpType === "vscode") {
+            if (swp.swpUser) {
+                user = swp.swpUser.length <= 20 
+                ? swp.swpUser : swp.swpUser.substring(0, 20) + "..";
+            } else {
+                user = "unknown VS Code user";
+            } 
+        } else if (swp && swp.swpType === "vim") {
+            user = "a Vim user";
+        } 
+
+        let part1 = "is in use by " + user;
+        let part2 = " (.swp file exists)";
+        if (editing) {
+            part2 = ". If you save your now you may overwrite their changes.";
+        }
+        let message = `${filename} ${part1}${part2}`;
+
+        if (editing) {
+            vscode.window.showWarningMessage(message, 'Open Dialog', 'Save As Dialog')
+            .then((choice) => showDialog(choice));
+            dsDoc.lastEditWarning = Date.now();
+        } else {
+            vscode.window.showWarningMessage(message)
+        }
 }
 
 const showDialog = function(choice: (string | undefined)) {

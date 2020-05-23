@@ -13,6 +13,7 @@ class DsDocument {
     hasOurSwp: boolean;
     forceLock: boolean;
     potentialUnsyncedChanges: boolean;
+    lastEditWarning: number | null = null;
     removeOwnSwp: () => void;
 
     constructor(document: vscode.TextDocument) {

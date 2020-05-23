@@ -1,9 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.active = exports.deactivate = exports.activate = void 0;
+exports.timeBetweenEditWarnings = exports.active = exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const ds = require("./display");
 const core_1 = require("./core");
+const timeBetweenEditWarnings = 4000;
+exports.timeBetweenEditWarnings = timeBetweenEditWarnings;
 let swpStatusBar;
 let active = true;
 exports.active = active;

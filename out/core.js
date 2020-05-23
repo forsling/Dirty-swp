@@ -11,6 +11,7 @@ let DsDocs = {};
 exports.DsDocs = DsDocs;
 class DsDocument {
     constructor(document) {
+        this.lastEditWarning = null;
         let self = this;
         let filePath = document.uri.fsPath;
         let folder = path.dirname(filePath);
