@@ -18,6 +18,19 @@ function activate(context) {
     /**********************
     *  Listeners
     ***********************/
+    let activeEditorChangedListener = vscode.window.onDidChangeActiveTextEditor((e) => {
+        let textDoc = e === null || e === void 0 ? void 0 : e.document;
+        if (!active || typeof textDoc === "undefined" || textDoc.uri.scheme != "file") {
+            return;
+        }
+        let dsDoc = core_1.DsDocs[textDoc.uri.toString()];
+        if (typeof dsDoc !== 'undefined' && !dsDoc.hasOurSwp) {
+            core_1.checkSwp(dsDoc, (swp) => {
+                ds.warn(dsDoc, false, swp);
+            }, () => { });
+        }
+    });
+    context.subscriptions.push(activeEditorChangedListener);
     let openDocumentListener = vscode.workspace.onDidOpenTextDocument(e => {
         if (!active || e.uri.scheme != "file") {
             return;

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import * as ds from './display';
-import { DsDocument, DsDocs, swpString, checkSwp, lockFile, emptyDocs } from './core';
+import { DsDocument, DsDocs, checkSwp, lockFile, emptyDocs } from './core';
 
 const timeBetweenEditWarnings = 4000;
 let swpStatusBar: vscode.StatusBarItem;
@@ -16,6 +16,21 @@ export function activate(context: vscode.ExtensionContext) {
 	/**********************
 	*  Listeners
 	***********************/
+	let activeEditorChangedListener = vscode.window.onDidChangeActiveTextEditor((e) => {
+		let textDoc = e?.document;
+		if (!active || typeof textDoc === "undefined" || textDoc.uri.scheme != "file") {
+			return;
+		}
+	
+		let dsDoc = DsDocs[textDoc.uri.toString()];
+		if (typeof dsDoc !== 'undefined' && !dsDoc.hasOurSwp) {
+			checkSwp(dsDoc, (swp) => {
+				ds.warn(dsDoc, false, swp);
+			}, () => { });
+		}
+	});
+	context.subscriptions.push(activeEditorChangedListener);
+
 	let openDocumentListener = vscode.workspace.onDidOpenTextDocument(e => {
 		if (!active || e.uri.scheme != "file") {
 			return;
