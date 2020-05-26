@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.showDialog = exports.warn = exports.listSwp = void 0;
 const vscode = require("vscode");
 const fs = require("fs");
 const core_1 = require("./core");
@@ -103,7 +102,7 @@ function hasSwpSync(dsDoc) {
     return false;
 }
 const warn = function (dsDoc, editing, swp) {
-    let now = new Date().getTime();
+    let now = Date.now();
     if (editing && dsDoc.lastEditWarning != null
         && now - dsDoc.lastEditWarning < extension_1.timeBetweenEditWarnings) {
         return;

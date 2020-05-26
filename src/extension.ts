@@ -17,12 +17,11 @@ export function activate(context: vscode.ExtensionContext) {
 	*  Listeners
 	***********************/
 	let activeEditorChangedListener = vscode.window.onDidChangeActiveTextEditor((e) => {
-		let textDoc = e?.document;
-		if (!active || typeof textDoc === "undefined" || textDoc.uri.scheme != "file") {
+		if (!active || typeof e === 'undefined' || typeof e.document === "undefined" || e.document.uri.scheme != "file") {
 			return;
 		}
 	
-		let dsDoc = DsDocs[textDoc.uri.toString()];
+		let dsDoc = DsDocs[e.document.uri.toString()];
 		if (typeof dsDoc !== 'undefined' && !dsDoc.hasOurSwp) {
 			checkSwp(dsDoc, (swp) => {
 				ds.warn(dsDoc, false, swp);
@@ -68,7 +67,10 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		let dsDoc = DsDocs[e.document.uri.toString()];
-		if (!dsDoc.textDocument.isDirty) {
+		if (typeof dsDoc == 'undefined') {
+			console.error("Edited document is undefined in documentChangedListener");
+			return;
+		} else if (!dsDoc.textDocument.isDirty) {
 			dsDoc.potentialUnsyncedChanges = false;
 			//If file is no longer dirty, but still has our swp, 
 			//then we can remove the .swp file (unless 'lock until close' is set)

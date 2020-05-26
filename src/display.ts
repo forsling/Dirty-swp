@@ -104,7 +104,7 @@ function hasSwpSync(dsDoc: DsDocument) {
 }
 
 const warn = function(dsDoc: DsDocument, editing: boolean, swp: null | swpFile) {
-        let now = new Date().getTime();
+        let now = Date.now();
         if (editing && dsDoc.lastEditWarning != null 
             && now - dsDoc.lastEditWarning < timeBetweenEditWarnings) {
             return;

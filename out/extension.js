@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.timeBetweenEditWarnings = exports.active = exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const ds = require("./display");
 const core_1 = require("./core");
@@ -19,11 +18,10 @@ function activate(context) {
     *  Listeners
     ***********************/
     let activeEditorChangedListener = vscode.window.onDidChangeActiveTextEditor((e) => {
-        let textDoc = e === null || e === void 0 ? void 0 : e.document;
-        if (!active || typeof textDoc === "undefined" || textDoc.uri.scheme != "file") {
+        if (!active || typeof e === 'undefined' || typeof e.document === "undefined" || e.document.uri.scheme != "file") {
             return;
         }
-        let dsDoc = core_1.DsDocs[textDoc.uri.toString()];
+        let dsDoc = core_1.DsDocs[e.document.uri.toString()];
         if (typeof dsDoc !== 'undefined' && !dsDoc.hasOurSwp) {
             core_1.checkSwp(dsDoc, (swp) => {
                 ds.warn(dsDoc, false, swp);
@@ -61,7 +59,11 @@ function activate(context) {
             return;
         }
         let dsDoc = core_1.DsDocs[e.document.uri.toString()];
-        if (!dsDoc.textDocument.isDirty) {
+        if (typeof dsDoc == 'undefined') {
+            console.error("Edited document is undefined in documentChangedListener");
+            return;
+        }
+        else if (!dsDoc.textDocument.isDirty) {
             dsDoc.potentialUnsyncedChanges = false;
             //If file is no longer dirty, but still has our swp, 
             //then we can remove the .swp file (unless 'lock until close' is set)
