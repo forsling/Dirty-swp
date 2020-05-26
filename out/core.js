@@ -1,6 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.lockFile = exports.checkSwp = exports.emptyDocs = exports.swpString = exports.swpFile = exports.DsDocs = exports.DsDocument = void 0;
 const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
@@ -70,9 +69,14 @@ const readFile = function (dpath, callback) {
                 callback(err, "", stats);
                 return;
             }
-            var bsize = Math.min(1024, stats.size);
-            var buffer = Buffer.alloc(bsize);
+            let bsize = Math.min(1024, stats.size);
+            let buffer = Buffer.alloc(bsize);
             fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
+                fs.close(fd, (err) => {
+                    if (err) {
+                        console.error(err);
+                    }
+                });
                 if (err) {
                     callback(err, "", stats);
                     return;

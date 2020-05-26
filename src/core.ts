@@ -87,9 +87,13 @@ const readFile = function(
                     callback(err, "", stats);
                     return;
                 }
-                var bsize = Math.min(1024, stats.size);
-                var buffer = Buffer.alloc(bsize);
+                let bsize = Math.min(1024, stats.size);
+                let buffer = Buffer.alloc(bsize);
                 fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
+                    fs.close(fd, (err) => {
+                        if (err) { console.error(err) }
+                    });
+                    
                     if (err) {
                         callback(err, "", stats);
                         return;
@@ -97,7 +101,6 @@ const readFile = function(
                     var bstring = buffer.toString('utf8');
                     callback(null, bstring, stats);
                 });
-
             });
         });
 }
