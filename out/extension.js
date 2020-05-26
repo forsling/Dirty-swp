@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.timeBetweenEditWarnings = exports.active = exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const ds = require("./display");
 const core_1 = require("./core");
