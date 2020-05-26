@@ -73,6 +73,11 @@ function activate(context) {
         }
         else if (!dsDoc.hasOurSwp) {
             //File has unsaved changes but is not locked by us
+            let now = Date.now();
+            if (dsDoc.lastEditWarning != null && now - dsDoc.lastEditWarning < 1000) {
+                //Only do checking/locking at most once per second
+                return;
+            }
             core_1.checkSwp(dsDoc, (swp) => {
                 dsDoc.potentialUnsyncedChanges = true;
                 ds.warn(dsDoc, true, swp);

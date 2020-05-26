@@ -1,8 +1,10 @@
 # Dirty.swp Changelog
 
 ## [0.9.5]
-- Warn when changing active text document to locked file (instead of just on open or edit)
-- Minimum time between edit warnings (instead of for every keystroke)
+- Will now warn when changing active text document to locked file instead of just on open or edit
+- Limited processing of .swp checking/locking logic on bursts of document changes
+- Limited warnings for document changes to locked files (instead of at every keystroke)
+- Fixed file descriptor not being closed when reading .swp files
 
 ## [0.9.4]
 - Safer locking
