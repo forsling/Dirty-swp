@@ -6,6 +6,7 @@ const ds = require("./display");
 const core_1 = require("./core");
 const timeBetweenEditWarnings = 4000;
 exports.timeBetweenEditWarnings = timeBetweenEditWarnings;
+const timeBetweenEditChecks = 150;
 let swpStatusBar;
 let active = true;
 exports.active = active;
@@ -64,21 +65,24 @@ function activate(context) {
             console.error("Edited document is undefined in documentChangedListener");
             return;
         }
-        else if (!dsDoc.textDocument.isDirty) {
+        //Handle revert/undo to non-dirty document
+        if (!dsDoc.textDocument.isDirty) {
             dsDoc.potentialUnsyncedChanges = false;
             //If file is no longer dirty, but still has our swp, 
             //then we can remove the .swp file (unless 'lock until close' is set)
             if (dsDoc.hasOurSwp && !dsDoc.forceLock) {
                 dsDoc.removeOwnSwp();
             }
+            return;
         }
-        else if (!dsDoc.hasOurSwp) {
+        let now = Date.now();
+        if (dsDoc.lastCheck != null && now - dsDoc.lastCheck < timeBetweenEditChecks) {
+            //Restrict how often the document edit handling can be done
+            return;
+        }
+        dsDoc.lastCheck = now;
+        if (!dsDoc.hasOurSwp) {
             //File has unsaved changes but is not locked by us
-            let now = Date.now();
-            if (dsDoc.lastEditWarning != null && now - dsDoc.lastEditWarning < 1000) {
-                //Only do checking/locking at most once per second
-                return;
-            }
             core_1.checkSwp(dsDoc, (swp) => {
                 dsDoc.potentialUnsyncedChanges = true;
                 ds.warn(dsDoc, true, swp);

@@ -3,6 +3,7 @@ import * as ds from './display';
 import { DsDocument, DsDocs, checkSwp, lockFile, emptyDocs } from './core';
 
 const timeBetweenEditWarnings = 4000;
+const timeBetweenEditChecks = 150;
 let swpStatusBar: vscode.StatusBarItem;
 let active: boolean = true;
 
@@ -55,7 +56,6 @@ export function activate(context: vscode.ExtensionContext) {
 		let doc = DsDocs[e.uri.toString()];
 		//If there is a swap file that we created, remove it on document close
 		doc.removeOwnSwp();
-
 		delete DsDocs[e.uri.toString()];
 		console.log(DsDocs);
 	});
@@ -70,22 +70,28 @@ export function activate(context: vscode.ExtensionContext) {
 		if (typeof dsDoc == 'undefined') {
 			console.error("Edited document is undefined in documentChangedListener");
 			return;
-		} else if (!dsDoc.textDocument.isDirty) {
+		} 
+		
+		//Handle revert/undo to non-dirty document
+		if (!dsDoc.textDocument.isDirty) {
 			dsDoc.potentialUnsyncedChanges = false;
 			//If file is no longer dirty, but still has our swp, 
 			//then we can remove the .swp file (unless 'lock until close' is set)
 			if (dsDoc.hasOurSwp && !dsDoc.forceLock) {
 				dsDoc.removeOwnSwp();
 			}
-		} else if (!dsDoc.hasOurSwp) { 
+			return
+		} 
+		
+		let now = Date.now();
+		if (dsDoc.lastCheck != null && now - dsDoc.lastCheck < timeBetweenEditChecks) {
+			//Restrict how often the document edit handling can be done
+			return;
+		}
+		dsDoc.lastCheck = now;
+
+		if (!dsDoc.hasOurSwp) { 
 			//File has unsaved changes but is not locked by us
-
-			let now = Date.now();
-			if (dsDoc.lastEditWarning != null && now - dsDoc.lastEditWarning < 1000) {
-				//Only do checking/locking at most once per second
-				return;
-			}
-
 			checkSwp(dsDoc, (swp) => {
 				dsDoc.potentialUnsyncedChanges = true;
 				ds.warn(dsDoc, true, swp);

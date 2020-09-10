@@ -13,6 +13,7 @@ class DsDocument {
     hasOurSwp: boolean;
     forceLock: boolean;
     potentialUnsyncedChanges: boolean;
+    lastCheck: number | null = null;
     lastEditWarning: number | null = null;
     removeOwnSwp: () => void;
 
