@@ -2,7 +2,7 @@
     "name": "dirtyswp",
     "displayName": "Dirty.swp",
     "description": ".swp file detection & locking",
-    "version": "0.9.5",
+    "version": "0.9.6",
     "publisher": "forsling",
     "icon": "images/logo512.png",
     "engines": {

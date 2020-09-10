@@ -88,22 +88,37 @@ const readFile = function (dpath, callback) {
         });
     });
 };
-const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
+const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback, allowRetry = true) {
     readFile(dsDoc.swapPath, (err, filestring, stats) => {
         if (err) {
             if (err.code === 'ENOENT') {
                 noSwpCallback();
             }
-            else {
+            else if (err.code !== 'EPERM') {
                 vscode.window.showErrorMessage("Dirty.swp error: " + err.message);
+            }
+        }
+        else if (!filestring) {
+            if (allowRetry) {
+                console.log("Found empty swp file, checking again in 500ms in case a file is being created");
+                setTimeout(() => {
+                    checkSwp(dsDoc, hasOthersSwpCallback, noSwpCallback, false);
+                }, 500);
+            }
+            else {
+                console.log("Still empty .swp file. Considering this .swp invalid");
+                noSwpCallback();
             }
         }
         else {
             //Check if it isn't our swp after all, could be from a lost session
             let firstPart = filestring.split(":")[0];
+            console.log(`checkSwp found swp: ${firstPart}`);
             if (!err && firstPart === swpString) {
-                console.log("Reclaimed own .swp at " + dsDoc.swapPath);
-                dsDoc.hasOurSwp = true;
+                if (!dsDoc.hasOurSwp) {
+                    console.log("Reclaimed own .swp at " + dsDoc.swapPath);
+                    dsDoc.hasOurSwp = true;
+                }
             }
             else {
                 var swp = new swpFile(filestring);
@@ -114,6 +129,7 @@ const checkSwp = function (dsDoc, hasOthersSwpCallback, noSwpCallback) {
 };
 exports.checkSwp = checkSwp;
 const lockFile = function (dsDoc, allowRetry = true) {
+    console.log("Trying to lock file: " + dsDoc.basename);
     //If the file is locked by us then editing is fine and nothing else needs to be done
     if (dsDoc.hasOurSwp) {
         return;
@@ -123,7 +139,10 @@ const lockFile = function (dsDoc, allowRetry = true) {
     }, () => {
         //If there is no current swp but the file is dirty we should lock it for ourselves
         fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
-            if (err) {
+            if (dsDoc.hasOurSwp) {
+                console.log("Document has our swp");
+            }
+            else if (err) {
                 if (allowRetry && err.code === "EEXIST") {
                     //Recurse once if a .swp file appeared just after we checked but before the write
                     lockFile(dsDoc, false);
