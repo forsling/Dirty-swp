@@ -77,73 +77,74 @@ class swpFile {
     }
 }
 
-const readFile = function(
-    dpath: string, 
-    callback: (err: NodeJS.ErrnoException | null, filestring: string, stats: fs.Stats | null) => void) {
-        fs.stat(dpath, (err, stats) => {
+const readFile = function(dpath: string, 
+                          callback: (err: NodeJS.ErrnoException | null, 
+                                     filestring: string, 
+                                     stats: fs.Stats | null) => void) {
+    fs.stat(dpath, (err, stats) => {
+        if (err) {
+            callback(err, "", null);
+            return;
+        }
+        fs.open(dpath, "r", (err, fd) => {
             if (err) {
-                callback(err, "", null);
+                callback(err, "", stats);
                 return;
             }
-            fs.open(dpath, "r", (err, fd) => {
+            let bsize = Math.min(1024, stats.size);
+            let buffer = Buffer.alloc(bsize);
+            fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
+                fs.close(fd, (err) => {
+                    if (err) { console.error(err) }
+                });
+                
                 if (err) {
                     callback(err, "", stats);
                     return;
                 }
-                let bsize = Math.min(1024, stats.size);
-                let buffer = Buffer.alloc(bsize);
-                fs.read(fd, buffer, 0, buffer.length, null, (err, bread, buffer) => {
-                    fs.close(fd, (err) => {
-                        if (err) { console.error(err) }
-                    });
-                    
-                    if (err) {
-                        callback(err, "", stats);
-                        return;
-                    }
-                    var bstring = buffer.toString('utf8');
-                    callback(null, bstring, stats);
-                });
+                var bstring = buffer.toString('utf8');
+                callback(null, bstring, stats);
             });
         });
+    });
 }
 
 const checkSwp = function(dsDoc: DsDocument, 
                           hasOthersSwpCallback: (swp: swpFile) => void, 
                           noSwpCallback: () => void,
                           allowRetry = true) {
-        readFile(dsDoc.swapPath, (err, filestring, stats) => {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    noSwpCallback();
-                } else if (err.code !== 'EPERM') {
-                    vscode.window.showErrorMessage("Dirty.swp error: " + err.message)
-                }
-            } else if (!filestring) {
-                if (allowRetry) {
-                    console.log("Found empty swp file, checking again in 500ms in case a file is being created");
-                    setTimeout(() => {
-                        checkSwp(dsDoc, hasOthersSwpCallback, noSwpCallback, false);
-                    }, 500);
-                } else {
-                    console.log("Still empty .swp file. Considering this .swp invalid");
-                    noSwpCallback();
+    readFile(dsDoc.swapPath, (err, filestring, stats) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                noSwpCallback();
+            } else if (err.code !== 'EPERM') {
+                vscode.window.showErrorMessage("Dirty.swp error: " + err.message)
+            }
+        } else if (!filestring) {
+            if (allowRetry) {
+                console.log("Found empty swp file, checking again in 500ms in case a file is being created");
+                setTimeout(() => {
+                    checkSwp(dsDoc, hasOthersSwpCallback, noSwpCallback, false);
+                }, 500);
+            } else {
+                console.log("Still empty .swp file. Considering this .swp invalid");
+                noSwpCallback();
+            }
+        } else {
+            //Check if it isn't our swp after all, could be from a lost session
+            let firstPart: string = filestring.split(":")[0];
+            console.log(`checkSwp found swp: ${firstPart}`);
+            if (!err && firstPart === swpString) {
+                if (!dsDoc.hasOurSwp) {
+                    console.log("Reclaimed own .swp at " + dsDoc.swapPath);
+                    dsDoc.hasOurSwp = true; 
                 }
             } else {
-                //Check if it isn't our swp after all, could be from a lost session
-                let firstPart: string = filestring.split(":")[0];
-                console.log(`checkSwp found swp: ${firstPart}`);
-                if (!err && firstPart === swpString) {
-                    if (!dsDoc.hasOurSwp) {
-                        console.log("Reclaimed own .swp at " + dsDoc.swapPath);
-                        dsDoc.hasOurSwp = true; 
-                    }
-                } else {
-                    var swp = new swpFile(filestring);
-                    hasOthersSwpCallback(swp);
-                }
+                var swp = new swpFile(filestring);
+                hasOthersSwpCallback(swp);
             }
-        });
+        }
+    });
 }
 
 const lockFile = function(dsDoc: DsDocument, allowRetry = true) {
@@ -152,25 +153,22 @@ const lockFile = function(dsDoc: DsDocument, allowRetry = true) {
     if (dsDoc.hasOurSwp) {
         return;
     }
-    checkSwp(dsDoc, (swp) => {
-        ds.warn(dsDoc, true, swp);
-    }, () => {
-        //If there is no current swp but the file is dirty we should lock it for ourselves
-        fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
-            if (dsDoc.hasOurSwp) {
-                console.log("Document has our swp");
-            } else if (err) {
-                if (allowRetry && err.code === "EEXIST") {
-                    //Recurse once if a .swp file appeared just after we checked but before the write
-                    lockFile(dsDoc, false);
-                } else {
-                    vscode.window.showErrorMessage("Writing .swp failed: " + err);
-                }
+
+    //If there is no current swp but the file is dirty we should lock it for ourselves
+    fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
+        if (dsDoc.hasOurSwp) {
+            console.log("Document has our swp");
+        } else if (err) {
+            if (allowRetry && err.code === "EEXIST") {
+                //Recurse once if a .swp file appeared just after we checked but before the write
+                lockFile(dsDoc, false);
             } else {
-                dsDoc.hasOurSwp = true;
-                console.log("Created swp at: " + dsDoc.swapPath);
+                vscode.window.showErrorMessage("Writing .swp failed: " + err);
             }
-        });
+        } else {
+            dsDoc.hasOurSwp = true;
+            console.log("Created swp at: " + dsDoc.swapPath);
+        }
     });
 }
 
