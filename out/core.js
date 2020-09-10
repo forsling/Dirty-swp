@@ -31,6 +31,9 @@ class DsDocument {
                     if (err) {
                         vscode.window.showErrorMessage("Unable to remove own .swp: " + err);
                     }
+                    else {
+                        console.log("Unlinked swp at: " + self.swapPath);
+                    }
                 });
                 self.hasOurSwp = false;
             }
@@ -154,7 +157,7 @@ const lockFile = function (dsDoc, allowRetry = true) {
             }
             else {
                 dsDoc.hasOurSwp = true;
-                console.log("Written swp: " + dsDoc.swapPath);
+                console.log("Created swp at: " + dsDoc.swapPath);
             }
         });
     });

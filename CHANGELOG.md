@@ -1,5 +1,8 @@
 # Dirty.swp Changelog
 
+## [0.9.6]
+- Fixed bug where if two edit events were triggered at almost the same time on a non-dirty file then it could raise a false edit warning
+
 ## [0.9.5]
 - Will now warn when changing active text document to locked file instead of just on open or edit
 - Limited processing of .swp checking/locking logic on bursts of document changes
