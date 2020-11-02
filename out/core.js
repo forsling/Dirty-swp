@@ -4,7 +4,6 @@ exports.lockFile = exports.checkSwp = exports.emptyDocs = exports.swpString = ex
 const vscode = require("vscode");
 const fs = require("fs");
 const path = require("path");
-const ds = require("./display");
 const swpString = "VSCODE/" + vscode.env.machineId;
 exports.swpString = swpString;
 let DsDocs = {};
@@ -138,28 +137,24 @@ const lockFile = function (dsDoc, allowRetry = true) {
     if (dsDoc.hasOurSwp) {
         return;
     }
-    checkSwp(dsDoc, (swp) => {
-        ds.warn(dsDoc, true, swp);
-    }, () => {
-        //If there is no current swp but the file is dirty we should lock it for ourselves
-        fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
-            if (dsDoc.hasOurSwp) {
-                console.log("Document has our swp");
-            }
-            else if (err) {
-                if (allowRetry && err.code === "EEXIST") {
-                    //Recurse once if a .swp file appeared just after we checked but before the write
-                    lockFile(dsDoc, false);
-                }
-                else {
-                    vscode.window.showErrorMessage("Writing .swp failed: " + err);
-                }
+    //If there is no current swp but the file is dirty we should lock it for ourselves
+    fs.writeFile(dsDoc.swapPath, getFullSwpString(), { flag: "wx" }, (err) => {
+        if (dsDoc.hasOurSwp) {
+            console.log("Document has our swp");
+        }
+        else if (err) {
+            if (allowRetry && err.code === "EEXIST") {
+                //Recurse once if a .swp file appeared just after we checked but before the write
+                lockFile(dsDoc, false);
             }
             else {
-                dsDoc.hasOurSwp = true;
-                console.log("Created swp at: " + dsDoc.swapPath);
+                vscode.window.showErrorMessage("Writing .swp failed: " + err);
             }
-        });
+        }
+        else {
+            dsDoc.hasOurSwp = true;
+            console.log("Created swp at: " + dsDoc.swapPath);
+        }
     });
 };
 exports.lockFile = lockFile;

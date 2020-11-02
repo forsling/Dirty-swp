@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as fs from "fs";
 import * as path from "path";
-import * as ds from './display';
 
 const swpString: string = "VSCODE/" + vscode.env.machineId;
 let DsDocs: DsDocArray = {};

@@ -1,5 +1,8 @@
 # Dirty.swp Changelog
 
+## [0.9.7]
+- Updated packages
+
 ## [0.9.6]
 - Fixed bug where if two edit events were triggered at almost the same time on a non-dirty file then it could raise a false edit warning
 
